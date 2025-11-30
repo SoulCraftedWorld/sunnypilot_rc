@@ -1,0 +1,892 @@
+
+/* Джойстик */
+#slider-container-joystick {
+    width: 7.2vw; /* Фиксированная ширина слайдера */
+    height: 5.2vh; /* Фиксированная высота слайдера */
+    position: relative; /* Для позиционирования внутренних элементов */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    user-select: none;
+    padding-bottom: 0.1vh;
+    padding-top: 0.1vh;
+    margin-right: 1.6vw;
+}
+.knob-joystick-class{
+    width: 5.7vh;
+    height: 5.7vh;
+    border-radius: 50%;
+    background-color: #4a7393;
+    background-image: url('../pic/joystick.png'); /* Изображение */
+    background-size: cover; /* Растягивает изображение, чтобы заполнить кнопку */
+    background-position: center; /* Центрирование изображения */
+    background-repeat: no-repeat; /* Запрещает повторение изображения */
+    position: absolute;
+    left: 0; /* Начальная позиция кнопки (левый край) */
+    top: 50%;
+    transform: translateY(-50%); /* Центровка по вертикали */
+    transition: left 0.4s ease;
+    cursor: pointer;
+    box-shadow: 0 0.2vh 0.9vh rgba(5, 3, 3, 0.3);
+    z-index: 10;
+}
+
+.knob-joystick-class.pressed {
+    width: 5.9vh;
+    height: 5.9vh;
+    background-color: #7da7b0;
+    border-radius: 50%;
+    cursor: pointer;
+    position: absolute;
+    animation: color-ring 0.5s forwards;
+}
+
+
+#slider_joystick {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background-color: #dcedfd;
+    border-radius: 3.0vh / 50%; /* Овальная форма */
+    display: flex;
+    align-items: center;
+    transition: background-color 0.3s ease, transform 0.3s ease;
+
+}
+
+
+
+
+/*#slider.active {*/
+/*    border-color: lightblue;*/
+/*    transform: scale(1.2); !* Расширение круга *!*/
+/*}*/
+
+#slider_joystick.pressed {
+    border-color: #4c8c2a;
+    /*animation: expand-ring 0.5s forwards;*/
+}
+#slider_joystick[data-status="green"] {
+    border-color: green;
+    box-shadow: 0 0 0 0.4vh green; /* Зелёный ободок */
+}
+#slider_joystick[data-status="yellow"] {
+    border-color: #a5560d;
+    box-shadow: 0 0 0 0.4vh #e1bb37; /* Красный ободок */
+}
+#slider_joystick[data-status="red"] {
+    border-color: #a50d0d;
+    box-shadow: 0 0 0 0.4vh #c57676; /* Красный ободок */
+}
+#slider_joystick.active .slider-text {
+    color: rgba(0, 0, 0, 0.6); /* Более яркий цвет при активации */
+}
+#slider_joystick[data-status="yellow"] .slider-text {
+    text-align: start;
+    padding-left: 0.2vw;
+    font-size: 1.5vh;
+    z-index: 1;
+    font-weight: bold;
+}
+#slider_joystick[data-status="green"] .slider-text {
+    text-align: start;
+    padding-left: 0.2vw;
+    color: green;
+    font-size: 1.5vh;
+    font-weight: bold;
+    z-index: 1;
+}
+
+#slider_joystick[data-status="red"] .slider-text {
+    text-align:  center;
+    font-size: 1.5vh;
+    padding-left: 1.8vw;
+    z-index: 1;
+    font-weight: bold;
+}
+.joystick-control-overlay {
+    margin: 1vh  1vh  1vh 2vh;
+}
+
+
+/* Подложка и элементы управления */
+#joystick-bar-buttons{
+    position: absolute;
+    bottom: 14vh;
+    align-self: center;
+    width:  40%;
+    height: auto;
+    z-index: 1001;
+
+    display: flex;
+    opacity: 0;
+    pointer-events: none; /* Не кликабельно в скрытом состоянии */
+
+    padding: 0.8vh 0.8vh 1.8vh 0.8vw;
+    border-top-left-radius: 1.5vh;
+    border-top-right-radius: 1.5vh;
+    gap: 1.7vh;
+    align-items: center;
+    justify-content: center;
+    transform: translateY(50%);
+    transition: opacity 0.3s ease, transform 0.5s ease;
+}
+
+#joystick-bar-buttons.visible {
+    opacity: 1;
+    background-color: rgba(0, 0, 0, 0.2);
+    pointer-events: auto; /* Делает кликабельным, когда видно */
+    transform: translateY(0);
+}
+
+
+#joystick-button-space {
+    position: absolute;
+    bottom: 0;
+    right: 0.5vh;
+    width:  auto;
+    height: auto;
+    z-index: 1001;
+    background-color: rgba(0, 0, 0, 0.3);
+    border-radius: 1.5vh;
+    padding: 1.2vh 1.2vw;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    rotate: -90deg;
+    transform: translateX(-100%);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.5s ease, transform 0.5s ease, rotate 0.5s ease;
+}
+
+#joystick-button-space.visible {
+    opacity: 1;
+    pointer-events: auto; /* Делает кликабельным, когда видно */
+    rotate: 0deg;
+    transform: translateX(0);
+}
+
+/* Горизонтальные кнопки (влево/вправо) */
+.joystick-horizontal-buttons {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1.3vw;
+}
+
+/* Вертикальные кнопки */
+.joystick-vertical-buttons {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.8vh;
+
+}
+
+.joystick-turn-to-zero {
+    display: inline-block;
+    position: relative;
+    width: 8.2vh;
+    height: 5.2vh;
+    border-color: #53789b;
+    box-shadow: -0.4vh -0.5vh 0.9vh  rgba(5, 3, 3, 0.4);
+    color: white;
+    border-radius: 0.6vh;
+}
+.joystick-value-box {
+    width: 8.2vh;
+    height: 5.2vh;
+    box-shadow: 0.1vh 0.1vh 0.4vh 0.4vh rgba(18, 66, 198, 0.4);
+    color: white;
+    border-radius: 0.6vh;
+    display: flex;
+    border-color: #1a2124;
+    justify-content: center;
+    border-width: 0.2vh;
+    font-size: 2.1vh;
+    align-items: center;
+    transition: background-color 0.3s ease;
+}
+.common-box-container-horizontal{
+    border-color:  rgba(5, 3, 3, 0.4);
+    border-radius: 0.6vh;
+    border-width: 0.2vh;
+    border-style: solid;
+    padding-top: 0.7vh;
+    padding-bottom: 0.7vh;
+    padding-left: 0.8vh;
+    padding-right: 0.5vh;
+
+    gap: 1.1vw;
+    justify-content: space-between;
+    display: flex;
+    flex-direction: row;
+}
+
+#joystick-diagonal-buttons-container {
+    border-color:  rgba(5, 3, 3, 0.4);
+    border-radius: 0.6vh;
+    border-width: 0.2vh;
+    padding-top: 1.7vh;
+    padding-bottom: 1.7vh;
+    padding-left: 0.7vh;
+    padding-right: 0.7vh;
+    border-style: solid;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.8vw;
+    pointer-events: none;
+    opacity: 0.5;
+    transition: opacity 0.3s ease;
+}
+
+#joystick-diagonal-buttons-container.active {
+    pointer-events: all; /* Включаем взаимодействие */
+    opacity: 1; /* Полная видимость */
+}
+/* Визуальный блокирующий слой */
+#joystick-diagonal-buttons-container::before {
+    content: ""; /* Создаём пустой слой */
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.2); /* Полупрозрачный серый фон */
+    pointer-events: none; /* Блокирующий слой не перехватывает клики */
+    z-index: 100; /* Слой над содержимым */
+    display: block;
+}
+
+#joystick-diagonal-buttons-container.active::before {
+    content: none;
+}
+
+#turn-to-zero-btn-container{
+    border-color:  rgba(5, 3, 3, 0.4);
+    border-radius: 0.6vh;
+    border-width: 0.2vh;
+    padding: 0.7vh;
+    border-style: solid;
+    position: relative;
+}
+/* Стили для кнопки "Вперёд-Назад" */
+#turn-to-zero-btn {
+    width: 100%;
+    height: 100%;
+    background-color: rgba(83, 120, 155, 0.4); /* Цвет кнопки */
+    color: white;
+    border: none;
+    border-radius: 0.6vh;
+
+    cursor: pointer;
+    z-index: 501;
+    text-align: center;
+    transition: background-color 0.3s ease;
+    position: relative;
+    box-shadow: -0.4vh -0.5vh 0.9vh  rgba(5, 3, 3, 0.4);
+
+    &.text {
+        font-size: 2.2vh;
+        padding-bottom: 1.3vh;
+    }
+
+}
+
+#turn-to-zero-btn.released {
+    transform: scale(1.05); /* Лёгкое увеличение */
+    box-shadow: 0 0 1.9vh 1.3vh rgba(31, 31, 234, 0.3); /* Расширение тени */
+    background-color: rgba(31, 31, 234, 0.1); /* Лёгкий фон при активации */
+}
+
+/* Текст под кнопкой */
+#turn-to-zero-btn-label {
+    position: absolute;
+    font-size: 1.7vh;
+    color: #fff;
+    width: 100%;
+    text-align: center;
+    user-select: none;
+    top: 20%; /* Центрирование по вертикали */
+    z-index: 502;
+}
+
+/* Стили для кнопки "Вперёд-Назад" */
+#joystick-direction-btn {
+    width: 6.2vh;
+    height: 4.8vh;
+    background-size: cover;
+    border-radius: 0.4vh / 10%;
+    background-repeat: no-repeat;
+    background-position: center;
+    background-color: transparent;
+    border: none;
+    cursor: pointer;
+    background-image: url('../pic/drive_bkw.png');
+}
+
+/* Текст под кнопкой */
+#joystick-direction-label {
+    position: absolute;
+    font-size: 1.8vh;
+    color: #fff;
+    text-align: center;
+    user-select: none;
+    margin-top: 4.8vh;
+}
+
+@keyframes rotation-image {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(180deg);
+    }
+}
+
+@keyframes rotation-image-back {
+    0% {
+        transform: rotate(180deg);
+    }
+    100% {
+        transform: rotate(0deg);
+    }
+}
+/* Изображение "Вперёд" */
+#joystick-direction-btn.forward {
+    animation: rotation-image 0.7s forwards;
+    transform: scale(1.05);
+}
+
+/* Изображение "Назад" */
+#joystick-direction-btn.backward {
+    animation: rotation-image-back 0.7s forwards;
+    transform: scale(1.05);
+}
+/* Контейнер для кнопки и текста */
+.joystick-direction {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.4vh;
+
+    padding-bottom: 2.5vh;
+    padding-top: 1vh;
+    padding-left: 1vh;
+    padding-right: 1vh;
+    z-index: 1001;
+    background-color: rgba(108, 100, 100, 0.5);
+    border-radius: 1.5vh;
+
+
+}
+/* Кнопки управления */
+.joystick-turn-control-button {
+    width: 8.2vh;
+    height: 5.2vh;
+    background-color: transparent; /* Цвет кнопки */
+    color: white;
+    border: none;
+    box-shadow: -0.3vh -0.3vh 0.8vh rgba(5, 3, 3, 0.7);
+    border-radius: 0.5vh;
+    font-size: 3.2vh; /* Увеличенные иконки для кнопок */
+    cursor: pointer;
+    transition: transform 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease;
+}
+
+/* Состояние нажатия */
+.joystick-turn-control-button.pressed {
+    transform: scale(1.05); /* Лёгкое увеличение */
+    box-shadow: 0 0 1vh 0.8vh rgba(31, 31, 234, 0.3); /* Расширение тени */
+    background-color: rgba(31, 31, 234, 0.1); /* Лёгкий фон при активации */
+}
+
+/* Состояние отпускания */
+.joystick-turn-control-button.released {
+    transform: scale(1); /* Возврат к обычному размеру */
+    box-shadow: -0.3vh -0.3vh 0.8vh rgba(5, 3, 3, 0.7); /* Обычная тень */
+    background-color: transparent; /* Прозрачный фон */
+}
+
+/* Ховер эффект для кнопок */
+.joystick-turn-control-button:hover {
+    background-color: #50789b; /* Темнее при наведении */
+}
+
+
+
+#stop-btn {
+    display: flex; /* Flexbox для контейнера */
+    justify-content: center; /* Горизонтальное центрирование */
+    align-items: center; /* Вертикальное центрирование */
+    background-color: rgba(232, 44, 44, 0.4);
+    transition: background-color 0.3s ease;
+    height: 20.3vh;
+    width: 5.2vh;
+    border-radius: 1.4vh / 2%;
+    background-position: center;
+    border-width: 0.2vh;
+    border-color: #1a2124;
+
+    cursor: pointer;
+    position: relative;
+    box-shadow: -0.2vh -0.2vh 0.7vh rgba(5, 3, 3, 0.6);
+}
+
+#stop-btn-image {
+    background-image: url('../pic/button_stop.png');
+    background-size: cover;
+    background-repeat: no-repeat;
+    aspect-ratio: 2/1;
+    rotate: 90deg;
+}
+
+.joystick-horizontal-buttons.frame {
+    width: 100%;
+    height: auto;
+    margin-right: 0.1vh;
+    display: flex;
+    align-items: center;
+    padding: 0.5vh;
+    background-color: transparent;
+    border: 0.2vh solid transparent;
+    border-radius: 1.4vh / 2%;
+    transition: box-shadow 0.4s ease;
+}
+
+.joystick-horizontal-buttons.frame.active{
+    border: 0.2vh solid rgba(205, 19, 19, 0.3);
+    box-shadow: 0 0 0.6vh 0.8vh rgba(227, 9, 9, 0.3);
+}
+
+#stop-btn.active::before {
+    box-shadow: 0 0 0.8vh 0.9vh rgba(227, 9, 9, 0.7);
+    border-radius: 1.4vh / 2%;
+}
+
+#stop-btn.pressed {
+    background-color: rgba(227, 135, 135, 0.7);
+    box-shadow: -0.2vh -0.2vh 1.8vh 0.9vh rgba(211, 70, 70, 0.9);
+
+}
+
+
+/* Кнопки управления */
+.joystick-control-button {
+    display: flex;
+    background-color: transparent;
+    transition: background-color 0.3s ease;
+    width: 7.7vh;
+    height: 5.3vh;
+    border-radius: 0.3vh / 10%;
+    background-position: center;
+    border: 0.2vh solid rgba(5, 3, 3, 0.6);
+    cursor: pointer;
+    align-items: center;
+    position: relative;
+    z-index: 1003;
+    box-shadow: -0.2vh -0.2vh 0.6vh rgba(5, 3, 3, 0.4);
+}
+.joystick-control-button-image {
+    background-color: transparent;
+    background-size: cover;
+    width: 6.3vh;
+    height: 4.3vh;
+    align-self: center;
+    background-repeat: no-repeat;
+}
+
+/* Подложка для active с помощью ::before */
+.joystick-control-button.active::before {
+    content: '';
+    position: absolute;
+    top: -0.3vh; /* Увеличиваем размер подложки */
+    left: -0.3vh;
+    right: -0.3vh;
+    bottom: -0.3vh;
+    border-radius: inherit; /* Наследуем скругление углов */
+    border: 0.1vh solid rgba(12, 13, 12, 0.9); /* Цвет подложки */
+
+    box-shadow: 0 0 0.2vh 0.6vh rgba(22, 129, 13, 0.9); /* Подложка с тенями */
+    z-index: 1000; /* Позади самой кнопки */
+    pointer-events: none; /* Исключаем из кликабельности */
+}
+
+/* Эффект pressed с меньшей тенью */
+.joystick-control-button.pressed {
+    transform: scale(1.05);
+    background-color: rgba(115, 140, 240, 0.4); /* Подсветка кнопки */
+    box-shadow: 0 0 0.6vh 0.4vh rgba(71, 58, 218, 0.8); /* Окантовка меньше активной подложки */
+    z-index: 10002; /* Поднимаем кнопку выше подложки */
+}
+
+#power-btn {
+    display: flex;
+    background-color: transparent;
+    transition: background-color 0.3s ease;
+    width: 7.7vh;
+    height: 5.3vh;
+    border-radius: 0.3vh / 10%;
+    background-position: center;
+    border: none;
+    cursor: pointer;
+    align-items: center;
+    box-shadow: -0.2vh -0.2vh 0.7vh rgba(5, 3, 3, 0.4);
+}
+#power-btn-image {
+    background-image: url('../pic/power.png');
+    background-color: transparent;
+    background-size: cover;
+    width: 6.3vh;
+    height: 4.3vh;
+    align-self: center;
+    background-repeat: no-repeat;
+}
+
+#power-btn.active {
+    background-color: rgba(115, 140, 240, 0.4);
+    box-shadow: -0.3vh -0.3vh 0.8vh 0.8vh rgba(71, 58, 218, 0.9);
+
+}
+#power-btn.pressed {
+    background-color: rgba(115, 140, 240, 0.4);
+    box-shadow: -0.3vh -0.3vh 0.8vh 0.8vh rgba(71, 58, 218, 0.6);
+
+}
+
+
+
+#clutch-btn-image {
+    background-image: url('../pic/clutch.png');
+    background-color: transparent;
+    background-size: cover;
+    width: 4.3vh;
+    height: 5.3vh;
+    align-self: center;
+    background-repeat: no-repeat;
+}
+#clutch-btn.pressed {
+    background-color: rgba(63, 40, 170, 0.47);
+    box-shadow: 0 0 0.1vh 0.4vh rgb(43, 28, 202, 0.7);
+}
+
+#engine-start-btn-image {
+    background-image: url('../pic/engine.png');
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: contain; /* Вписываем изображение */
+    background-color: transparent;
+    width: 97%;
+    height: auto;
+    aspect-ratio: 1 / 1;
+}
+
+#engine-start-btn.pressed {
+    box-shadow: 0 0 0.4vh 0.7vh rgba(138, 78, 13, 0.38); /* Расширение тени */
+    background-color: rgba(161, 126, 30, 0.42); /* Лёгкий фон при активации */
+
+}
+
+#engine-start-btn.pressed.hold-off::before {
+    content: "Удерживайте"; /* Текст подсказки */
+    position: absolute;
+    top: -4.5vh; /* Располагаем текст выше кнопки */
+    left: 50%; /* Центрируем текст */
+    transform: translateX(-50%);
+    background-color: rgba(0, 0, 0, 0.6); /* Полупрозрачный фон */
+    color: white; /* Цвет текста */
+    font-size: 1.7vh; /* Размер шрифта */
+    padding: 0.5vh 1vh; /* Внутренние отступы */
+    border-radius: 0.5vh; /* Скруглённые углы */
+    white-space: nowrap; /* Запрещаем перенос текста */
+    z-index: 1000; /* Поверх кнопки */
+    opacity: 1; /* Полная видимость */
+    transition: opacity 0.3s ease;
+}
+
+#engine-start-btn.hold::before {
+    content: "Удерживайте"; /* Текст подсказки */
+    position: absolute;
+    top: -4.5vh; /* Располагаем текст выше кнопки */
+    left: 50%; /* Центрируем текст */
+    transform: translateX(-50%);
+    background-color: rgba(0, 0, 0, 0.6); /* Полупрозрачный фон */
+    color: white; /* Цвет текста */
+    font-size: 1.7vh; /* Размер шрифта */
+    padding: 0.5vh 1vh; /* Внутренние отступы */
+    border-radius: 0.5vh; /* Скруглённые углы */
+    white-space: nowrap; /* Запрещаем перенос текста */
+    z-index: 1000; /* Поверх кнопки */
+    opacity: 1; /* Полная видимость */
+    transition: opacity 0.3s ease;
+}
+
+#engine-start-btn.hold.pressed::before {
+    opacity: 0; /* Исчезновение подсказки при удержании */
+}
+
+
+#electronic-drive-btn-image {
+    background-image: url('../pic/electro_drive.png');
+    width: 6.3vh;
+    height: 4.3vh;
+}
+
+#electronic-drive-btn.pressed {
+    box-shadow: 0 0 0.2vh 0.7vh rgba(43, 139, 42, 0.3);
+    background-color: rgba(41, 93, 39, 0.6);
+}
+
+
+/* Контейнер параметров */
+#plotter-modal {
+    position: fixed;
+    top: 4.7vh;
+    left: 25%;
+    align-self: center;
+    width: 40%;
+    height: auto;
+    /*overflow-y: scroll;*/
+    background-color: rgba(0, 0, 0, 0.4);
+    color: white;
+    padding: 15px;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.4);
+    z-index: 1001;
+    pointer-events: none;
+    opacity: 0;
+    transform: translateY(-110%);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+#plotter-modal.hidden {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-110%);
+}
+
+#plotter-modal.visible {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+}
+
+
+
+.parameters-table {
+    display: grid;
+    grid-template-columns: 2.1fr 0.3fr 0.55fr; /* Три колонки одинаковой ширины */
+    gap: 1vh; /* Отступы между элементами */
+    padding: 1vh;
+    border: 1px solid #181616; /* Обрамление таблицы */
+    border-radius: 0.5vh;
+    color: #1a2124;
+    background-color: rgba(42, 62, 80, 0.3);
+}
+
+.parameter-item {
+    display: contents; /* Используем содержимое для правильного отображения Grid */
+
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.4vw 0.7vh;
+    background-color: #2a3e50;
+    border-radius: 0.3vh;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.parameter-item label{
+    display: block;
+    padding: 0.5vh;
+    border: 1px solid #090909;
+    border-radius: 0.3vh;
+    background-color: #828282;
+    text-align: start;
+    font-size: 2.1vh;
+}
+.parameter-item input{
+    display: block;
+    padding: 0.5vh;
+    border-radius: 0.3vh;
+    text-align: center;
+    background-color: #828282;
+    font-size: 1.7vh;
+}
+.parameter-item select {
+    display: block;
+    padding: 0.5vh;
+    border: 1px solid #141010;
+    border-radius: 0.3vh;
+    background-color: #e5e3e3;
+    text-align: center;
+    font-size: 1.4vh;
+}
+
+.parameter-item input[type="checkbox"] {
+    width: 2.7vh;
+    height: 2.7vh;
+    margin: auto; /* Центрирование чекбокса */
+}
+
+.parameter-item select {
+    width: 100%;
+}
+
+
+/*#plotter-btn {*/
+/*    font-size: 1.8vh;*/
+/*    transition: background-color 0.3s ease;*/
+/*    width: 6.5vh;*/
+/*    height: 5.5vh;*/
+/*    background-color: transparent;*/
+/*    box-shadow: -0.2vh -0.2vh 0.6vh rgba(5, 3, 3, 0.4);*/
+/*    background-size: cover;*/
+/*    border-radius: 0.2vh / 10%;*/
+/*    background-repeat: no-repeat;*/
+/*    background-position: center;*/
+/*    border: none;*/
+/*    cursor: pointer;*/
+/*    z-index: 10001;*/
+/*}*/
+/*#plotter-btn.active {*/
+/*    background-color: #cdcbb5;*/
+/*    box-shadow: -0.4vh -0.4vh 1.1vh rgba(5, 3, 3, 0.7)*/
+/*}*/
+
+.checkbox-container {
+    display: flex;
+    width: 6.9vh;
+    height: 5.2vh;
+    flex-direction: column; /* Расположить элементы вертикально */
+    align-items: center; /* Центрировать галочку */
+    gap: 0.1vh; /* Отступ между надписью и галочкой */
+}
+
+.checkbox-label {
+    font-size: 1.7vh; /* Маленький текст */
+    color: #ffffff; /* Цвет текста */
+}
+
+.custom-checkbox {
+    width: 2vh;
+    height: 2vh;
+    cursor: pointer;
+    accent-color: #2a3e8c; /* Цвет галочки */
+}
+
+
+/* Джойстик */
+.joystick-container {
+    position: fixed;
+    bottom: 8%;
+    /*background: transparent;*/
+    background-color: rgba(0, 0, 0, 0.01);
+    width: 29%;
+    min-width: 38vh;
+    aspect-ratio: 1 / 1;
+    z-index: 1100;
+    opacity: 1;
+    justify-content: center;
+    align-items: center;
+    pointer-events: none;
+    display: block;
+    transition: opacity 0.2s ease; /* Плавное появление */
+}
+.joystick-container.left {
+    border-radius: 3% 40% 3% 3%;
+    left: 0;
+}
+.joystick-container.right {
+    border-radius: 40% 3% 3% 3%;
+    right: 0;
+}
+.joystick-container.visible {
+    display: flex;
+    pointer-events: auto;
+}
+
+.joystick-container.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.joystick-circle {
+    position: absolute;
+
+    background-color: rgba(255, 255, 255, 0.3);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    transition: background-color 0.2s ease;
+}
+
+.joystick-circle.left {
+    width: 45%;
+    border-radius: 50%;
+    aspect-ratio: 1 / 1;
+}
+.joystick-circle.right {
+    width: 40%;
+    height: 40%;
+    border-radius: 25% 25% 25% 25%;
+
+}
+
+.joystick-circle.active {
+    display: block; /* Появляется при касании */
+}
+.joystick-info {
+    position: absolute;
+    top: -30%; /* Над кругом */
+    left: 50%; /* По центру круга */
+    transform: translate(-50%, -100%); /* Смещаем для центрирования */
+    background-color: rgba(0, 0, 0, 0.7); /* Тёмный фон для контраста */
+    color: white; /* Цвет текста */
+    padding: 0.5vh 0.7vh; /* Внутренние отступы */
+    border-radius: 0.5vh;
+    font-size: 2.1vh;
+    white-space: nowrap; /* Запрет переноса текста */
+    z-index: 1200; /* Поверх джойстика */
+    box-shadow: 0 0.2vh 0.5vh rgba(0, 0, 0, 0.3); /* Тень */
+    pointer-events: none; /* Исключаем из взаимодействий */
+    text-align: center; /* Выравнивание текста */
+}
+.joystick-circle-knob {
+    position: relative;
+    width: 25%;
+    aspect-ratio: 1 / 1;
+    background-color: rgba(26, 23, 85, 0.8);
+    border-radius: 50%;
+    box-shadow: 0.1vh 0 0.2vh 0.5vh rgba(0, 0, 0, 0.3);
+    border: 0.2vh solid rgba(0, 0, 0, 0.3);
+    left: calc(50% - (25%/2));
+    top: calc(50% - (25%/2));
+    transition: transform 0.1s ease;
+}
+
+.joystick-line {
+    position: absolute;
+    background-color: rgba(0, 0, 0, 0.2);
+}
+
+.joystick-line.vertical {
+    width: 1px; /* Толщина линии */
+    height: 100%; /* Высота равна диаметру круга */
+    left: 50%; /* По центру горизонтально */
+    top: 0;
+    transform: translateX(-50%);
+}
+
+.joystick-line.horizontal {
+    height: 1px; /* Толщина линии */
+    width: 100%; /* Ширина равна диаметру круга */
+    top: 50%; /* По центру вертикально */
+    left: 0;
+    transform: translateY(-50%);
+}

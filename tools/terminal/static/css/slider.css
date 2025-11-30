@@ -1,0 +1,362 @@
+/* ====== СТИЛИ СЛАЙДЕРА ====== */
+
+/*.vertical-slider-container {*/
+/*    display: flex;*/
+/*    flex-direction: column;*/
+/*    align-items: center;*/
+/*    width: 3vh;*/
+/*    min-width: 3vh; !* Ширина контейнера *!*/
+/*    height: 45vh; !* Высота контейнера *!*/
+/*    min-height: 45vh;*/
+/*    position: relative;*/
+/*    margin: 1.2vh;*/
+/*    rotate: 0deg;*/
+/*}*/
+
+
+/*.vertical-slider-status {*/
+/*    display: flex;*/
+/*    font-size: 2.2vh;*/
+/*    text-align: center;*/
+/*    white-space: nowrap;*/
+/*    justify-content: center;*/
+/*    background-color: rgba(0, 0, 0, 0.5); !* Тёмный фон для контраста *!*/
+/*    color: rgba(225, 218, 218, 0.84); !* Цвет текста *!*/
+/*    padding: 0.3vh 0.4vh;*/
+/*    border-radius: 0.5vh;*/
+/*    pointer-events: none;*/
+/*}*/
+
+
+/*.vertical-slider {*/
+/*    width: 1.6vh; !* Ширина слайдера *!*/
+/*    min-width: 1.6vh;*/
+/*    height: 100%; !* Высота слайдера *!*/
+/*    background-color: rgba(28, 102, 142, 0.5);*/
+/*    border-radius: 0.4vh;*/
+/*    z-index: 1100;*/
+/*    position: relative;*/
+/*    user-select: none;*/
+/*    touch-action: none;*/
+/*}*/
+
+/*.vertical-slider-line {*/
+/*    position: absolute;*/
+/*    z-index: 1090;*/
+/*    background-color: rgba(0, 0, 0, 0.2);*/
+/*    left: 50%;*/
+/*    transform: translateX(-50%);*/
+/*    width: 3.0vh;*/
+/*    height: 0.2vh;*/
+/*}*/
+
+/*.vertical-slider-line.accel {*/
+/*    top: 0;*/
+/*    width: 2.0vh;*/
+/*    height: 50%;*/
+/*    border-radius: 1vh 1vh 0 0;*/
+/*    background: linear-gradient(to bottom, rgba(236, 141, 91, 0.8), rgba(236, 141, 91, 0.3));*/
+/*}*/
+
+/*.vertical-slider-line.brake {*/
+/*    top: 50%;*/
+/*    width: 2.0vh;*/
+/*    height: 50%;*/
+/*    border-radius: 0 0 1vh 1vh;*/
+/*    background: linear-gradient(to top, rgba(19, 92, 214, 0.8), rgba(19, 92, 214, 0.2));*/
+/*}*/
+
+/*.vertical-slider-line.center {*/
+/*    top: 50%;*/
+/*    background-color: rgba(255, 255, 255, 0.7);*/
+/*}*/
+
+/*.vertical-slider-knob {*/
+/*    z-index: 1101;*/
+/*    position: relative;*/
+/*    height: 4.4vh; !* Размер ручки *!*/
+/*    width: 7.0vh; !* Ширина ручки *!*/
+/*    background-color: rgba(13, 44, 74, 0.7);*/
+/*    border: 0.2vh solid rgba(0, 0, 0, 0.4);*/
+/*    border-radius: 25%;*/
+/*    left: 50%;*/
+/*    !*transform: translate(-50%, -50%);*!*/
+/*    will-change: transform; !* подсказка для композитинга *!*/
+/*    transform: translate3d(-50%, -50%, 0); !* сразу на отдельный слой *!*/
+/*    top: 50%;*/
+/*    transition: top 0.2s ease-out; !* Плавное движение *!*/
+/*    cursor: pointer;*/
+/*    box-shadow: 0 0 0.6vh 0.8vh rgba(225, 250, 189, 0.3);*/
+
+
+/*}*/
+
+/*.slider {*/
+/*    position: relative;*/
+/*    user-select: none;*/
+/*    touch-action: none; !* критично для тачей, чтобы убрать браузерные жесты *!*/
+/*}*/
+
+/*.slider.track-horizontal {*/
+/*    width: 380px;*/
+/*    height: 8px;*/
+/*    background: #e6e6e6;*/
+/*    border-radius: 4px;*/
+/*}*/
+
+/*.slider.track-vertical {*/
+/*    width: 8px;*/
+/*    height: 240px;*/
+/*    background: #e6e6e6;*/
+/*    border-radius: 4px;*/
+/*}*/
+
+/*!* Ручка слайдера — двигаем ТОЛЬКО transform *!*/
+/*.slider__knob {*/
+/*    position: absolute; !* якорим в (0,0), движение исключительно через transform *!*/
+/*    left: 0;*/
+/*    top: 0;*/
+/*    width: 22px;*/
+/*    height: 22px;*/
+/*    border-radius: 50%;*/
+/*    background: #3a74ff;*/
+/*    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);*/
+/*    will-change: transform; !* подсказка для композитинга *!*/
+/*    transform: translate3d(0, 0, 0); !* сразу на отдельный слой *!*/
+/*    cursor: pointer;*/
+/*    touch-action: none;*/
+/*}*/
+
+/*!* Для вертикального — сместим ручку, чтобы она была по центру трека *!*/
+/*.slider.track-vertical .slider__knob {*/
+/*    left: -7px; !* (22-8)/2 = 7 — центрируем над узким треком *!*/
+/*}*/
+
+/*.slider.track-horizontal .slider__knob {*/
+/*    top: -7px; !* (22-8)/2 = 7 — центрируем над узким треком *!*/
+/*}*/
+
+/*!* Подсказки % для примера *!*/
+/*.readout {*/
+/*    margin-top: 10px;*/
+/*    font-variant-numeric: tabular-nums;*/
+/*}*/
+
+
+/*.row {*/
+/*    display: flex;*/
+/*    gap: 40px;*/
+/*    align-items: flex-start;*/
+/*  }*/
+/*  .col {*/
+/*    flex: 0 0 auto;*/
+/*  }*/
+
+
+
+  /* ====== СТИЛИ СЛАЙДЕРА ====== */
+  .slider {
+    width: 22px;
+    height: 100%; /* Высота слайдера */
+    background-color: rgba(28, 102, 142, 0.5);
+    border-radius: 5px;
+    z-index: 1100;
+    position: absolute;
+    user-select: none;
+    touch-action: none;
+  }
+  .slider.track-horizontal {
+    width: 100%;
+    height: 28px;
+  }
+  .slider.track-vertical {
+    width: 28px;
+    height: 100%;
+  }
+
+  /* Ручка слайдера — двигаем ТОЛЬКО transform */
+  .slider__knob {
+    position: absolute; /* якорим в (0,0), движение исключительно через transform */
+    left: 0;
+    top: 0;
+    height: 37px;
+    width: 60px;
+    /*background: #3a74ff;*/
+    will-change: transform;         /* подсказка для композитинга */
+    transform: translate3d(0,0,0);  /* сразу на отдельный слой */
+    cursor: pointer;
+    touch-action: none;
+
+    z-index: 1101;
+
+    background-color: rgba(28, 62, 142, 0.7);
+    border: 3px solid rgba(0, 0, 0, 0.4);
+    border-radius: 25%;
+
+    /*transform: translate(-50%, -50%);*/
+    transition: top 0.2s ease-out; /* Плавное движение */
+    box-shadow: 0 0 8px 10px rgba(143, 114, 224, 0.3);
+  }
+
+
+  /* Для вертикального — сместим ручку, чтобы она была по центру трека */
+  .slider.track-vertical .slider__knob {
+    height: 37px;
+    width: 60px;
+    left: -16px;
+    top: -16px;
+    transform: translate3d(0,200px,0);
+  }
+  .slider.track-horizontal .slider__knob {
+    height: 60px;
+    width: 37px;
+    top: -20px;
+    left: -16px;
+  }
+
+
+.slider-container {
+    display: flex;
+    width: 40px;
+    height: 400px; /* Высота контейнера */
+    position: relative;
+    margin: 10px;
+    user-select: none;
+    touch-action: none;
+}
+.slider-container.track-vertical {
+    flex: 0 0 auto;
+    flex-direction: row;
+    align-content: flex-start;
+    width: 70px;
+    gap: 5px;
+    height: 400px;
+    min-height: 400px;
+    justify-content: center;
+}
+.slider-container.track-horizontal {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+    justify-items: center;
+    flex-direction: column;
+    align-content: center;
+    width: 400px;
+    min-width: 400px; /* Ширина контейнера */
+    height: 70px;
+}
+
+
+.slider-status {
+    display: flex;
+    font-size: 27px;
+    height: 36px;
+    text-align: center;
+    white-space: nowrap;
+    justify-content: center;
+    background-color: rgba(0, 0, 0, 0.44); /* Тёмный фон для контраста */
+    color: rgba(225, 218, 218, 0.84); /* Цвет текста */
+    padding: 5px 6px;
+    border-radius: 8px;
+    pointer-events: none;
+    font-variant-numeric: tabular-nums;
+}
+.slider-status.track-horizontal{
+
+}
+.slider-status.track-vertical {
+    transform: translate3d(-30%, -100%, 0);
+}
+.slider-status.track-horizontal.top{
+    transform: translate3d(0, -150%, 0);
+}
+.slider-status.bottom {
+    margin-top: 50px;
+}
+
+.slider-status.track-vertical.top{
+    transform: translate3d(0%, -130%, 0);
+}
+.slider-status.track-vertical.bottom{
+    transform: translate3d(0%, 130%, 0);
+}
+
+.slider-line {
+    position: absolute;
+    z-index: 1090;
+    background-color: rgba(0, 0, 0, 0.2);
+    left: 50%;
+    border-radius: 10px 10px 0 0;
+    width: 110%;
+    height: 5px;
+}
+
+.slider-line.track-horizontal{
+    left: 49%;
+    top: -10%;
+    width: 4px;
+    height: 120%;
+    border-radius: 0 0 10px 10px;
+    background-color: rgba(255, 255, 255, 0.7);
+    transform: translateY(-50%);
+}
+
+.slider-line.track-vertical{
+    left: -10%;
+    top: 49%;
+    width: 120%;
+    height: 4px;
+    border-radius: 10px 10px 0 0;
+    background-color: rgba(255, 255, 255, 0.7);
+}
+
+.slider-line.center {
+    top: 50%;
+    background-color: rgba(255, 255, 255, 0.7);
+}
+
+.slider-gradient {
+    position: absolute;
+    z-index: 1090;
+    background-color: rgba(0, 0, 0, 0.2);
+}
+
+
+.slider-gradient.track-horizontal {
+    top: 50%;
+    width: 51%;
+    height: 100%;
+    transform: translateY(-50%);
+}
+
+.slider-gradient.accel.track-horizontal {
+    border-radius: 0  15px 15px 0;
+    left: 50%;
+    background: linear-gradient(to left, rgba(236, 91, 113, 0.89), rgba(232, 151, 109, 0.3));
+}
+
+.slider-gradient.brake.track-horizontal {
+    left: -1%;
+    border-radius: 15px 0 0 15px;
+    background: linear-gradient(to left, rgba(162, 162, 198, 0.47), rgba(55, 58, 218, 0.73));
+}
+
+
+.slider-gradient.track-vertical {
+    left: 50%;
+    height: 51%;
+    width: 100%;
+    transform: translateX(-50%);
+}
+
+.slider-gradient.accel.track-vertical {
+    border-radius: 15px 15px 0  0  ;
+    top: -1%;
+    background: linear-gradient(to bottom, rgba(236, 91, 113, 0.89), rgba(232, 151, 109, 0.3));
+}
+
+.slider-gradient.brake.track-vertical {
+    top: 50%;
+    border-radius: 0  0 15px 15px;
+    background: linear-gradient(to bottom, rgba(162, 162, 198, 0.47), rgba(55, 58, 218, 0.73));
+}

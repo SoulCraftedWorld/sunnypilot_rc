@@ -1,0 +1,207 @@
+
+
+.controls {
+
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    display: flex;
+    justify-content: space-around;
+    z-index: 1000;
+    background: #1f3140;
+    /*flex-wrap: wrap; !* Разрешает перенос элементов *!*/
+}
+.controls > * {
+    flex: 1 1 50%; /* Дочерние элементы подстраиваются, но не ограничивают ширину явно */
+    margin: 0.7vh;
+    text-align: center;
+}
+
+
+@media (max-width: 600px) {
+    .controls {
+        position: absolute;
+        bottom: 0;
+        width: 100%;
+        z-index: 1000;
+        flex-direction: column; /* Переход в столбик */
+        align-items: center; /* Центровка по горизонтали */
+    }
+
+    .controls > * {
+        flex: 1 1 50%; /* Убираем фиксированную ширину */
+    }
+}
+
+
+.vertical-items {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 0.3vh;
+    gap: 1.6vh;
+}
+.vertical-items.border {
+    border: 0.2vh solid #2f82b2;
+    border-radius: 0.8vh;
+    padding: 0.3vh;
+    background: rgba(192, 205, 227, 0.67);
+}
+
+
+.horizontal-items {
+    display: flex;
+    flex-direction: row;
+
+}
+
+.line_container {
+    display: flex;
+    overflow: hidden; /* Для обеспечения, что контейнер растягивается */
+    justify-content: space-between; /* Распределение текста по краям */
+    align-items: center;           /* Вертикальное выравнивание текста */
+    padding: 0 1.6vh;
+    background: transparent;
+
+}
+.line_left {
+    float: left;
+    text-align: left;
+}
+.line_center {
+    color: #ac3b3b;
+    font-size: 2.0vh;
+}
+.control-button {
+    border: none;
+    border-radius: 1.6vh;
+    padding: 1.2vh 2.9vh;
+    margin-left: 10.4vh;
+    font-size: 2.8vh;
+    cursor: pointer;
+    outline: none;
+    align-content: center;
+    position: relative;
+    background-color: rgba(55, 102, 151, 0.68);
+    color: #000000;
+    transition: box-shadow 0.3s, background-color 0.3s, color 0.3s;
+}
+
+.control-button:focus {
+    box-shadow: inset 0 0.6vw 0.8vh #2f82b2;
+}
+.control-button.active {
+    background-color: #3a922f;
+    color: #ffffff;
+}
+.control-button.active.indicator {
+    border: 0.8vh solid transparent;
+}
+.control-button.indicator {
+    border: 0.5vh solid transparent;
+}
+.control-button.indicator.none { border-color: transparent; }
+.control-button.indicator.red { border-color: #d35b46; }
+.control-button.indicator.yellow { border-color: #d7bf47; }
+.control-button.indicator.green { border-color: #5a9431; }
+
+.common_button{
+    padding: 0.8vh 2.9vw; font-size: 2.9vh;"
+
+}
+.common_buttons_box{
+    display: flex; gap: 3.8vw; justify-content: center; width: 100%;
+}
+
+.trigger-button {
+    margin-left: 0.8vh; /* Расстояние между заголовком и кнопкой */
+    margin-top:  0.8vh;
+    margin-bottom: 0.2vh;
+    padding: 0.4vh 0.5vh;
+    font-size: 1.7vh;
+    width: auto;
+    background-color: #48668d;
+    color: white;
+    border: none;
+    border-radius: 0.7vh;
+    cursor: pointer;
+}
+
+.trigger-button.active {
+    box-shadow: 0 0  0.7vw 0.7vh rgb(145, 191, 234);
+}
+
+.icon-label {
+    text-align: center;
+    margin-top: 0.2vh;
+    font-size: 1.0vh;
+}
+
+.icon-container {
+    display: flex;
+    justify-content: center;
+    column-gap: 1.1vw;
+}
+.icon-wrapper {
+    text-align: center;
+    line-height: 0.5; /* Убирает зазор */
+}
+.icon {
+    width: 4.2vw;
+    height: 3.4vh;
+    border-radius: 10%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 2.1vh;
+    color: #cbd4e1;
+    font-weight: bold;
+    cursor: pointer;
+}
+.connected {
+    background-color: rgba(25, 91, 28, 0.58);
+}
+.connected_middle {
+    background-color: #ad8949;
+}
+.disconnected {
+    background-color: #d63c3c;
+}
+
+.fullscreen-container {
+    width: 100%;
+    height: 100%;
+    position: fixed;
+    background: transparent;
+    /*z-index: 10000;*/
+    justify-content: left;
+    align-items: start;
+}
+
+#fullscreen-button {
+    position: absolute;
+    top: 0.7vh;
+    right: 0.7vh;
+    width: 5.0vh; /* Размер кнопки */
+    height: 5.0vh;
+    background: url('/static/pic/full-screen-on.png') center / contain no-repeat; /* По умолчанию */
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    z-index: 2000;
+}
+
+#fullscreen-button.fullscreen {
+    background-image: url('/static/pic/full-screen-off.png'); /* Для активного состояния */
+}
+
+
+
+
+/* Эффекты при наведении */
+.fullscreen-button:hover img {
+    transform: scale(1.2); /* Лёгкое увеличение */
+    opacity: 0.8; /* Снижение прозрачности */
+}
+
+

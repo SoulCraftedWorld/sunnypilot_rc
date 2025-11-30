@@ -1,0 +1,285 @@
+
+:root {
+    --fill-percent-first: 0%;
+}
+:root {
+    --fill-percent-second: 0%;
+}
+/* Основной контейнер */
+.steer-container {
+    position: relative;
+    width: 32vh;
+    min-width: 29vh;
+    border-radius: 50%;
+    aspect-ratio: 1/1;
+    display: flex;
+    z-index: 1100;
+}
+
+/* Внешний круг */
+.steer-circle {
+    position: absolute;
+    width: 5%;
+    aspect-ratio: 1/1;
+    border-radius: 50%;
+    border: 0.3vh solid rgba(0, 0, 0, 0.2);
+
+    left: 50%;
+    top:  50%;
+    justify-content: center;
+    align-items: center;
+    z-index: 1100;
+    pointer-events: none;
+    transform: translate(-50%, -50%);
+    opacity: 0;
+    transition: opacity 0.5s ease, visibility 0s 0.5s, width 0.5s ease;
+}
+
+.steer-circle.visible {
+    visibility: visible; /* Делает элемент видимым */
+    opacity: 1;
+    display: flex;
+    width: 60%;
+    transition: opacity 0.5s ease, width 1s ease, visibility 0s 0s; /* Убираем задержку для visibility */
+}
+
+.steer-circle.active {
+    pointer-events: auto;
+}
+
+
+
+.steer-non-handle-area {
+    position: absolute;
+    aspect-ratio: 1/1;
+    border-radius: 50%;
+    /*background-color: rgba(242, 21, 62, 0.3);*/
+    box-shadow: 0 0 1.0vh 1.8vh rgba(246, 13, 13, 0.3);
+    pointer-events: none;
+    display: flex;
+    z-index: 1090;
+    width: 109%;
+    opacity: 0;
+    transition: opacity 0.3s ease, width 0.3s ease;
+}
+.steer-non-handle-area.active {
+    opacity: 1;
+    width: 96%;
+}
+.steer-non-handle-area.active:before {
+    opacity: 0;
+    width: 96%;
+}
+
+.steer-circle-image {
+    width: 97%;
+    height: auto; /* Сохраняем пропорции */
+    aspect-ratio: 1 / 1; /* Обеспечиваем квадрат */
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: contain; /* Вписываем изображение */
+    background-color: transparent;
+    background-image: url('../pic/steer_wheel.png');
+    border-radius: 50%; /* Круглая форма */
+    position: absolute;
+}
+
+
+.steer-center-circle {
+    position: absolute;
+    width: 107%;
+    aspect-ratio: 1/1;
+    border-radius: 50%;
+    display: flex;
+    -webkit-mask: radial-gradient(circle, transparent 67%, black 67%);
+    mask: radial-gradient(circle, transparent 67%, black 69%);
+    justify-content: center;
+    align-items: center;
+}
+.steer-center-circle.hardware {
+    width: 101%;
+    mask: none;
+    -webkit-mask: none;
+    display: none;
+}
+
+.steer-hardware-point {
+    position: absolute;
+    width:  3%;
+    top: 0;
+    left: 50%;
+    height: auto;
+    border-radius: 50%;
+    aspect-ratio: 1 / 1; /* Обеспечиваем квадрат */
+    border: 0.4vh solid rgba(248, 1, 1, 0.5);
+    transform: translate(-50%, -50%);
+}
+
+/* Ручка управления */
+.steer-center-circle.knob {
+    width: 100%;
+    mask: none;
+    -webkit-mask: none;
+}
+.steer-knob-inner{
+    position: absolute;
+    top: 0;
+    left: 50%;
+    width: 8%;
+    aspect-ratio: 1/1;
+    background-color: rgba(66, 133, 244, 0.3);
+    border-radius: 50%;
+    border: 0.3vh solid rgba(0, 0, 0, 0.2);
+
+    transform: translate(-50%, -50%);
+    box-shadow: 0 0 0.4vh 0.4vh rgba(61, 203, 163, 0.4);
+    transition: transform 0.2s ease;
+}
+
+.steer-center-circle.right {
+    background: conic-gradient(
+            rgba(36, 177, 63, 0.6) var(--fill-percent-first),
+            transparent var(--fill-percent-first)
+    );
+}
+.steer-center-circle.left {
+    background: conic-gradient(
+            transparent var(--fill-percent-first),
+            rgba(46, 83, 190, 0.6) var(--fill-percent-first)
+    );
+}
+
+/* Внутренний круг (зеленый, при обороте вправо) */
+.steer-second-circle {
+    position: absolute;
+    aspect-ratio: 1/1;
+    border-radius: 50%;
+
+    -webkit-mask: radial-gradient(circle, transparent 67%, black 67%);
+    mask: radial-gradient(circle, transparent 67%, black 67%);
+
+    pointer-events: none;
+    display: flex; /* Появляется при полном обороте вправо */
+    z-index: 1080;
+}
+
+.steer-second-circle.inner {
+    width: 100%;
+    background: conic-gradient(
+            rgba(0, 255, 0, 0.5) var(--fill-percent-second),
+            transparent var(--fill-percent-second)
+    );
+}
+
+/* Внешний круг (синий, при обороте влево) */
+.steer-second-circle.outer {
+    width: 113%;
+
+    background: conic-gradient(
+            transparent var(--fill-percent-second),
+            rgba(9, 9, 195, 0.55) var(--fill-percent-second)
+
+    );
+}
+
+
+
+.steer-line {
+    position: absolute;
+    background-color: rgba(0, 0, 0, 0.6);
+    height: 1vh;
+    width: 0.3vh;
+}
+.steer-line.top {
+    rotate: 0deg;
+    left: 50%;
+    top:  -4.5%;
+}
+.steer-line.right {
+    rotate: 90deg;
+    left: 102%;
+    top:  50%;
+}
+.steer-line.bottom {
+    left: 50%;
+    top:  100%;
+}
+.steer-line.left {
+    left: -3%;
+    top:  50%;
+    rotate: 90deg;
+}
+
+
+/* Кнопка для перемещения круга */
+.steer-drag-handle {
+    position: absolute;
+    top: 105%;
+    width: 5.0vh;
+    height: 5.0vh;
+    background-color: rgba(0, 0, 0, 0.3);
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 3.5vh;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: grab;
+    z-index: 1101;
+}
+.steer-drag-handle.left {
+    left: -15%;
+}
+.steer-drag-handle.right {
+    right: -15%;
+}
+
+.steer-info {
+    position: absolute;
+    background-color: rgba(0, 0, 0, 0.5); /* Тёмный фон для контраста */
+    color: rgba(255, 255, 255, 0.84); /* Цвет текста */
+    padding: 0.3vh 0.4vh;
+    border-radius: 0.5vh;
+    font-size: 2.1vh;
+    white-space: nowrap; /* Запрет переноса текста */
+    z-index: 1200; /* Поверх джойстика */
+    box-shadow: 0 0.2vh 0.5vh rgba(0, 0, 0, 0.3); /* Тень */
+    pointer-events: none; /* Исключаем из взаимодействий */
+    text-align: center; /* Выравнивание текста */
+}
+.steer-info.right {
+    right: -14%;
+    transform: translateX(150%);
+}
+.steer-info.left {
+    left: -14%;
+    transform: translate(-50%);
+}
+.steer-info.top-center {
+    left: 50%;
+    top: -15%;
+    transform: translate(-50% , -100%);
+}
+.steer-info.bottom-center {
+    left: 50%;
+    bottom: -15%;
+    transform: translate(-50% , 100%);
+}
+.steer-info.left-center {
+    left: -14%;
+    top: 50%;
+    transform: translate(-75%, -50%);
+}
+.steer-info.right-center {
+    right: -14%;
+    top: 50%;
+    transform: translate(75%, -50%);
+}
+.steer-info.bottom {
+    bottom: -12%;
+    transform: translateY(100%);
+}
+.steer-info.top {
+    top: -15%;
+    transform: translateY(-100%);
+}
