@@ -11,6 +11,7 @@ DESCRIPTIONS = {
     "See https://docs.comma.ai/how-to/connect-to-comma for more info."
   ),
   'joystick_debug_mode': "Preview the driver facing camera to ensure that driver monitoring has good visibility. (vehicle must be off)",
+  'remote_control_mode': "Enable remote control API on port 7880 and WEB Joystick control on port 80.",
   'ssh_key': (
     "Warning: This grants SSH access to all public keys in your GitHub settings. Never enter a GitHub username " +
     "other than your own. A comma employee will NEVER ask you to add their GitHub username."
@@ -37,6 +38,12 @@ class DeveloperLayout(Widget):
         callback=self._on_joystick_debug_mode,
       ),
       toggle_item(
+        "Remote Control Mode",
+        description=DESCRIPTIONS["remote_control_mode"],
+        initial_state=self._params.get_bool("RemoteControlMode"),
+        callback=self._on_remote_control_mode,
+      ),
+      toggle_item(
         "Longitudinal Maneuver Mode",
         description="",
         initial_state=self._params.get_bool("LongitudinalManeuverMode"),
@@ -57,5 +64,6 @@ class DeveloperLayout(Widget):
 
   def _on_enable_adb(self): pass
   def _on_joystick_debug_mode(self): pass
+  def _on_remote_control_mode(self): pass
   def _on_long_maneuver_mode(self): pass
   def _on_alpha_long_enabled(self): pass

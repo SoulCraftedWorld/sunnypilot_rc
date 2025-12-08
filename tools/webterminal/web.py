@@ -368,10 +368,11 @@ def simulation_task():
       # params.put_bool("JoystickDebugMode", False)
 
       JoystickDebugMode = params.get_bool("JoystickDebugMode")
+      RemoteControlMode = params.get_bool("RemoteControlMode")
       CP = sm['carParams']
       notCar = CP.notCar
 
-      message = f"DebugMode {JoystickDebugMode}, notCar {notCar}, joystick ({testJoystick}) axes: {tele_axes}, arm: {tele_arm},  Selfdrive: {sm['selfdriveState'].active}, CC En {carControl.enabled}; steerSet:{carControl.actuators.steeringAngleDeg:.1f}; "
+      message = f"DebugMode {JoystickDebugMode}, RC_Mode {RemoteControlMode}, notCar {notCar}, joystick ({testJoystick}) axes: {tele_axes}, arm: {tele_arm},  Selfdrive: {sm['selfdriveState'].active}, CC En {carControl.enabled}; steerSet:{carControl.actuators.steeringAngleDeg:.1f}; "
       print(message)
 
       for b in range(30, 0, -1):
@@ -423,10 +424,10 @@ from openpilot.common.basedir import BASEDIR
 from openpilot.system.webrtc.webrtcd import StreamRequestBody
 from openpilot.common.params import Params
 
-logger = logging.getLogger("terminal")
+logger = logging.getLogger("webterminal")
 logging.basicConfig(level=logging.INFO)
 
-TELEOPDIR = f"{BASEDIR}/tools/terminal"
+WEBTERMINALDIR = f"{BASEDIR}/tools/webterminal"
 WEBRTCD_HOST = "localhost"
 WEBRTCD_PORT = 5001
 
@@ -485,8 +486,8 @@ def create_ssl_cert(cert_path: str, key_path: str):
 
 
 def create_ssl_context():
-  cert_path = os.path.join(TELEOPDIR, "cert.pem")
-  key_path = os.path.join(TELEOPDIR, "key.pem")
+  cert_path = os.path.join(WEBTERMINALDIR, "cert.pem")
+  key_path = os.path.join(WEBTERMINALDIR, "key.pem")
   if not os.path.exists(cert_path) or not os.path.exists(key_path):
     logger.info("Creating certificate...")
     create_ssl_cert(cert_path, key_path)
@@ -499,7 +500,7 @@ def create_ssl_context():
 
 ## ENDPOINTS
 async def index(request: 'web.Request'):
-  with open(os.path.join(TELEOPDIR, "static", "index.html")) as f:
+  with open(os.path.join(WEBTERMINALDIR, "static", "index.html")) as f:
     content = f.read()
     return web.Response(content_type="text/html", text=content)
 
@@ -588,8 +589,9 @@ async def offer(request: 'web.Request'):
 
 def main():
   # Enable joystick debug mode
-  simulation_start()
+  # simulation_start()
   Params().put_bool("JoystickDebugMode", False)  # True
+  Params().put_bool("RemoteControlMode", True)  # True
 
   # App needs to be HTTPS for microphone and audio autoplay to work on the browser
   ssl_context = create_ssl_context()
@@ -599,7 +601,7 @@ def main():
   app.router.add_get("/ping", ping, allow_head=True)
   app.router.add_post("/offer", offer)
   app.router.add_post("/sound", sound)
-  app.router.add_static('/static', os.path.join(TELEOPDIR, 'static'))
+  app.router.add_static('/static', os.path.join(WEBTERMINALDIR, 'static'))
   web.run_app(app, access_log=None, host="0.0.0.0", port=SITE_PORT, ssl_context=ssl_context)
 
 
