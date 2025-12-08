@@ -183,6 +183,10 @@ Please use caution when using this feature. Only use the blinker when traffic an
         <translation>Modo de depuración de joystick</translation>
     </message>
     <message>
+        <source>Remote Control Mode</source>
+        <translation>Modo de Remote Control</translation>
+    </message>
+    <message>
         <source>Longitudinal Maneuver Mode</source>
         <translation>Modo de maniobra longitudinal</translation>
     </message>

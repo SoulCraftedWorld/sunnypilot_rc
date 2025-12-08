@@ -183,6 +183,10 @@ Please use caution when using this feature. Only use the blinker when traffic an
         <translation>搖桿調試模式</translation>
     </message>
     <message>
+        <source>Remote Control Mode</source>
+        <translation>Remote Control Mode</translation>
+    </message>
+    <message>
         <source>Longitudinal Maneuver Mode</source>
         <translation>縱向操控測試模式</translation>
     </message>

@@ -183,6 +183,10 @@ Please use caution when using this feature. Only use the blinker when traffic an
         <translation>ジョイスティックデバッグモード</translation>
     </message>
     <message>
+        <source>Remote Control Mode</source>
+        <translation>Remote Control Mode</translation>
+    </message>
+    <message>
         <source>Longitudinal Maneuver Mode</source>
         <translation>アクセル制御マニューバー</translation>
     </message>

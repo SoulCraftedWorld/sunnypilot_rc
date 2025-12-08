@@ -183,6 +183,10 @@ Please use caution when using this feature. Only use the blinker when traffic an
         <translation>Mode débogage au joystick</translation>
     </message>
     <message>
+        <source>Remote Control Mode</source>
+        <translation>Mode Remote Control</translation>
+    </message>
+    <message>
         <source>Longitudinal Maneuver Mode</source>
         <translation>Mode manœuvre longitudinale</translation>
     </message>

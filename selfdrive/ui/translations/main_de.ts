@@ -183,6 +183,10 @@ Please use caution when using this feature. Only use the blinker when traffic an
         <translation>Joystick Debug-Modus</translation>
     </message>
     <message>
+        <source>Remote Control Mode</source>
+        <translation>Remote Control-Modus</translation>
+    </message>
+    <message>
         <source>Longitudinal Maneuver Mode</source>
         <translation>Längsmanöver-Modus</translation>
     </message>

@@ -183,6 +183,10 @@ Please use caution when using this feature. Only use the blinker when traffic an
         <translation>وضع تصحيح أخطاء عصا التحكم</translation>
     </message>
     <message>
+        <source>Remote Control Mode</source>
+        <translation>وضع تصحيح أخطاء عصا التحكم</translation>
+    </message>
+    <message>
         <source>Longitudinal Maneuver Mode</source>
         <translation>وضع المناورة الطولية</translation>
     </message>
