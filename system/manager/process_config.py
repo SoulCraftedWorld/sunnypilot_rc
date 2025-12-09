@@ -22,7 +22,7 @@ def notcar(started: bool, params: Params, CP: car.CarParams) -> bool:
   return started and CP.notCar
 
 def iscar(started: bool, params: Params, CP: car.CarParams) -> bool:
-  return started and not CP.notCar
+  return started and True # not CP.notCar
 
 def logging(started: bool, params: Params, CP: car.CarParams) -> bool:
   run = (not CP.notCar) or not params.get_bool("DisableLogging")
@@ -38,7 +38,7 @@ def ublox(started: bool, params: Params, CP: car.CarParams) -> bool:
   return started and use_ublox
 
 def remote_control_mode(started: bool, params: Params, CP: car.CarParams) -> bool:
-  return started and params.get_bool("RemoteControlMode")
+  return started and True #params.get_bool("RemoteControlMode")
 
 def joystick(started: bool, params: Params, CP: car.CarParams) -> bool:
   return started and params.get_bool("JoystickDebugMode")
@@ -127,7 +127,7 @@ procs = [
   PythonProcess("raylib_ui", "selfdrive.ui.ui", always_run, enabled=False, watchdog_max_dt=(5 if not PC else None)),
   PythonProcess("soundd", "selfdrive.ui.soundd", only_onroad),
   PythonProcess("locationd", "selfdrive.locationd.locationd", only_onroad),
-  NativeProcess("_pandad", "selfdrive/pandad", ["./pandad"], always_run, enabled=False),
+  #NativeProcess("_pandad", "selfdrive/pandad", ["./pandad"], always_run, enabled=False),
   PythonProcess("calibrationd", "selfdrive.locationd.calibrationd", only_onroad),
   PythonProcess("torqued", "selfdrive.locationd.torqued", only_onroad),
   PythonProcess("controlsd", "selfdrive.controls.controlsd", and_(not_joystick, iscar)),
@@ -137,7 +137,7 @@ procs = [
   PythonProcess("deleter", "system.loggerd.deleter", always_run),
   PythonProcess("dmonitoringd", "selfdrive.monitoring.dmonitoringd", driverview, enabled=(WEBCAM or not PC)),
   PythonProcess("qcomgpsd", "system.qcomgpsd.qcomgpsd", qcomgps, enabled=TICI),
-  PythonProcess("pandad", "selfdrive.pandad.pandad", always_run),
+  #PythonProcess("pandad", "selfdrive.pandad.pandad", always_run),
   PythonProcess("paramsd", "selfdrive.locationd.paramsd", only_onroad),
   PythonProcess("lagd", "selfdrive.locationd.lagd", only_onroad),
   NativeProcess("ubloxd", "system/ubloxd", ["./ubloxd"], ublox, enabled=TICI),
@@ -155,8 +155,8 @@ procs = [
   # remote_control_mode
   # debug procs
   NativeProcess("bridge", "cereal/messaging", ["./bridge"], or_(remote_control_mode, notcar)),
-  PythonProcess("webrtcd", "system.webrtc.webrtcd", or_(remote_control_mode, notcar)),
-  PythonProcess("webterminal", "tools.webterminal.web", remote_control_mode),
+  # PythonProcess("webrtcd", "system.webrtc.webrtcd", or_(remote_control_mode, notcar)),
+  # PythonProcess("webterminal", "tools.webterminal.web", remote_control_mode),
 
   PythonProcess("webjoystick", "tools.bodyteleop.web", notcar),
   PythonProcess("joystick", "tools.joystick.joystick_control", and_(joystick, iscar)),
@@ -181,7 +181,6 @@ procs += [
   PythonProcess("mapd_manager", "sunnypilot.mapd.mapd_manager", always_run),
 ]
 
-
 if os.path.exists("./github_runner.sh"):
   procs += [NativeProcess("github_runner_start", "system/manager", ["./github_runner.sh", "start"], and_(only_offroad, use_github_runner), sigkill=False)]
 
@@ -200,3 +199,4 @@ if os.path.exists("../../third_party/copyparty/copyparty-sfx.py"):
   procs += [NativeProcess("copyparty-sfx", "third_party/copyparty", ["./copyparty-sfx.py", *copyparty_args], and_(only_offroad, use_copyparty))]
 
 managed_processes = {p.name: p for p in procs}
+

@@ -5,7 +5,7 @@
     <name>FirehosePanel</name>
     <message numerus="yes">
         <source>&lt;b&gt;%n segment(s)&lt;/b&gt; of your driving is in the training dataset so far.</source>
-        <translation>
+        <translation type="vanished">
             <numerusform>&lt;b&gt;%n segment&lt;/b&gt; of your driving is in the training dataset so far.</numerusform>
             <numerusform>&lt;b&gt;%n segments&lt;/b&gt; of your driving are in the training dataset so far.</numerusform>
         </translation>
@@ -15,7 +15,7 @@
     <name>InputDialog</name>
     <message numerus="yes">
         <source>Need at least %n character(s)!</source>
-        <translation>
+        <translation type="vanished">
             <numerusform>Need at least %n character!</numerusform>
             <numerusform>Need at least %n characters!</numerusform>
         </translation>
@@ -25,21 +25,21 @@
     <name>QObject</name>
     <message numerus="yes">
         <source>%n minute(s) ago</source>
-        <translation>
+        <translation type="vanished">
             <numerusform>%n minute ago</numerusform>
             <numerusform>%n minutes ago</numerusform>
         </translation>
     </message>
     <message numerus="yes">
         <source>%n hour(s) ago</source>
-        <translation>
+        <translation type="vanished">
             <numerusform>%n hour ago</numerusform>
             <numerusform>%n hours ago</numerusform>
         </translation>
     </message>
     <message numerus="yes">
         <source>%n day(s) ago</source>
-        <translation>
+        <translation type="vanished">
             <numerusform>%n day ago</numerusform>
             <numerusform>%n days ago</numerusform>
         </translation>

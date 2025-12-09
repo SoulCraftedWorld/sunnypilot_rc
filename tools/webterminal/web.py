@@ -368,12 +368,14 @@ def simulation_task():
       # params.put_bool("JoystickDebugMode", False)
 
       JoystickDebugMode = params.get_bool("JoystickDebugMode")
-      RemoteControlMode = params.get_bool("RemoteControlMode")
+      #RemoteControlMode = params.get_bool("RemoteControlMode")
       CP = sm['carParams']
       notCar = CP.notCar
 
-      message = f"DebugMode {JoystickDebugMode}, RC_Mode {RemoteControlMode}, notCar {notCar}, joystick ({testJoystick}) axes: {tele_axes}, arm: {tele_arm},  Selfdrive: {sm['selfdriveState'].active}, CC En {carControl.enabled}; steerSet:{carControl.actuators.steeringAngleDeg:.1f}; "
+      #message = f"DebugMode {JoystickDebugMode}, RC_Mode {RemoteControlMode}, notCar {notCar}, joystick ({testJoystick}) axes: {tele_axes}, arm: {tele_arm},  Selfdrive: {sm['selfdriveState'].active}, CC En {carControl.enabled}; steerSet:{carControl.actuators.steeringAngleDeg:.1f}; "
+      message = f"DebugMode {JoystickDebugMode}, notCar {notCar}, joystick ({testJoystick}) axes: {tele_axes}, arm: {tele_arm},  Selfdrive: {sm['selfdriveState'].active}, CC En {carControl.enabled}; steerSet:{carControl.actuators.steeringAngleDeg:.1f}; "
       print(message)
+
 
       for b in range(30, 0, -1):
         msg = messaging.new_message('carState')
@@ -439,11 +441,7 @@ SITE_PORT = 8080
 
 #"driver", "wideRoad", "road"
 
-# "front": "cameras",
-# "wide": "ecameras",
-# "driver": "dcameras"
-CAMERA_SELECT = "road"
-
+CAMERA_SELECT = "driver"  #"road"
 
 ## UTILS
 async def play_sound(sound: str):
@@ -589,9 +587,9 @@ async def offer(request: 'web.Request'):
 
 def main():
   # Enable joystick debug mode
-  # simulation_start()
+  simulation_start()
   Params().put_bool("JoystickDebugMode", False)  # True
-  Params().put_bool("RemoteControlMode", True)  # True
+  # Params().put_bool("RemoteControlMode", True)  # True
 
   # App needs to be HTTPS for microphone and audio autoplay to work on the browser
   ssl_context = create_ssl_context()

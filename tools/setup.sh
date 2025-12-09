@@ -35,8 +35,10 @@ EOF
 }
 
 function sentry_send_event() {
-  SENTRY_KEY=dd0cba62ba0ac07ff9f388f8f1e6a7f4
-  SENTRY_URL=https://sentry.io/api/4507726145781760/store/
+  #SENTRY_KEY=dd0cba62ba0ac07ff9f388f8f1e6a7f4
+  # SENTRY_URL=https://sentry.io/api/4507726145781760/store/
+  SENTRY_KEY=dd0cba62ba0ac07ff9f388f8f1e6a7f5
+  SENTRY_URL=https://sentry.io/api/4507726145781761/store/
 
   EVENT=$1
   EVENT_TYPE=${2:-$EVENT}
