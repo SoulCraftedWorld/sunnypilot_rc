@@ -1,4 +1,7 @@
 
+import { SliderController } from './slider_controller.js';
+import { SteeringWheelJoystick } from './steer_wheel.js';
+import { executePlan } from "./controls.js";
 
 let isJoystickActive = false;
 const plotterBut = document.getElementById('plotter-btn');
@@ -347,6 +350,9 @@ function getSteerAngle() {
     let ang = 0.0;
     if (steeringWheelJoystick !== null && isJoystickActive) {
         ang = steeringWheelJoystick.getSteerAngle();
+        if (ang === null){
+            ang = 0.0;
+        }
     }
     return ang;
 }
@@ -354,7 +360,7 @@ function getSteerAngle() {
 function getAccelBrakeFactor() {
     let factor = 0.0;
     if (isJoystickActive) {
-        factor = (joystickState.throttle - joystickState.brake) / 100.0;
+        factor = (joystickState.throttleBrake) / 100.0;
     }
     return factor;
 }
@@ -492,15 +498,14 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 
-
-function getJoystickXY() {
+export function getJoystickXY() {
   //let x = getSteerPercent();
-  const sdeg = getSteerAngle();
-  const y = getAccelBrakeFactor();
-  return {sdeg, y}
+  const steer_deg = getSteerAngle();
+  const accel_brake = getAccelBrakeFactor();
+  return {steer_deg, accel_brake}
 }
 
-function onWindowResizeNext() {
+export function onWindowResizeNext() {
 
     const joystickRight = document.getElementById('joystick-container-right');
     const joystickSpace = document.getElementById('joystick-button-space');
@@ -510,6 +515,6 @@ function onWindowResizeNext() {
 }
 
 
-function getIsJoystickActive(){
+export function getIsJoystickActive(){
     return isJoystickActive;
 }

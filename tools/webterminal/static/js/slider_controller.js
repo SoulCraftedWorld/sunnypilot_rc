@@ -1,4 +1,4 @@
-class SliderController {
+export class SliderController {
     constructor() {
         this.sliders = {}; // Зарегистрированные слайдеры
         this.activeSliders = {}; // Активные касания

@@ -1,5 +1,5 @@
 
-class SteeringWheelJoystick {
+export class SteeringWheelJoystick {
 
     constructor(containerId,  options = {}) {
         this.steerContainer = document.getElementById(containerId);

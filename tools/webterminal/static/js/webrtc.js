@@ -1,11 +1,15 @@
 import { getXY } from "./controls.js";
 import { pingPoints, batteryPoints, chartPing, chartBattery } from "./plots.js";
-//import {getJoystickXY, getIsJoystickActive} from "./joystick_buttons.js";
+import {getJoystickXY, getIsJoystickActive, onWindowResizeNext} from "./joystick_buttons.js";
 
 export let controlCommandInterval = null;
 export let latencyInterval = null;
 export let lastChannelMessageTime = null;
 
+export function onWindowResize(){
+        onWindowResizeNext();
+
+}
 
 export async function offerRtcRequest(sdp, type) {
   const res = await fetch('/offer', {
@@ -175,19 +179,23 @@ export function start(pc, dc) {
   var parameters = {"ordered": true};
   dc = pc.createDataChannel('data', parameters);
   dc.onclose = function() {
-    clearInterval(controlCommandInterval);
-    clearInterval(latencyInterval);
+      if (controlCommandInterval!==null){
+        clearInterval(controlCommandInterval);
+      }
+     if (latencyInterval!==null){
+        clearInterval(latencyInterval);
+     }
   };
 
   function sendJoystickOverDataChannel() {
-    const {x, y} = getJoystickXY();
+    const {steer_deg, accel_brake} = getJoystickXY();
     let buttons = [];
     if (getIsJoystickActive()) {
         buttons.push(true);
     }else {
         buttons.push(false);
     }
-    var message = JSON.stringify({type: "testJoystick", data: {axes: [x, y], buttons: buttons}})
+    var message = JSON.stringify({type: "testJoystick", data: {axes: [steer_deg, accel_brake], buttons: buttons}})
     dc.send(message);
   }
   function checkLatency() {
@@ -206,6 +214,12 @@ export function start(pc, dc) {
     })
   }
   dc.onopen = function() {
+      if (controlCommandInterval!==null){
+        clearInterval(controlCommandInterval);
+      }
+     if (latencyInterval!==null){
+        clearInterval(latencyInterval);
+     }
     controlCommandInterval = setInterval(sendJoystickOverDataChannel, 50);
     latencyInterval = setInterval(checkLatency, 1000);
     sendJoystickOverDataChannel();

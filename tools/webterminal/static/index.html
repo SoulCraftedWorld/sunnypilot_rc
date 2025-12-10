@@ -211,84 +211,11 @@
        </div>
     </div>
     </div>
-
-    <script src="/static/js/jsmain.js" type="module"></script>
-    <script src="/static/js/slider_controller.js"></script>
-    <script src="/static/js/steer_wheel.js"></script>
-    <script src="/static/js/joystick_buttons.js"></script>
     <script src="/static/libs/chart.js"></script>
     <script src="/static/libs/moment.js"></script>
     <script src="/static/libs/chartjs-adapter-moment.min.js"></script>
 
-    <script>
-
-    if (screen.orientation && screen.orientation.lock) {
-        screen.orientation.lock("landscape") // или "landscape"
-            .then(() => {
-                console.log("Экран заблокирован в ландшафтной ориентации");
-            })
-            .catch((error) => {
-                console.error("Не удалось заблокировать ландшафтную ориентацию:", error);
-            });
-    } else {
-        console.error("Screen Orientation API не поддерживается вашим устройством");
-    }
-
-    function onWindowResize(){
-
-        onWindowResizeNext();
-    }
-
-    function onContentLoaded(){
-        console.log("onContentLoaded");
-
-        logsElement = document.getElementById('logs');
-
-        onWindowResize();
-
-    }
-
-
-
-    const container = document.getElementById('fullscreen-container-id');
-    const fullscreenButton = document.getElementById('fullscreen-button');
-
-    // Вход в полноэкранный режим
-    fullscreenButton.addEventListener('click', () => {
-        console.log('fullscreenButton click');
-        if (fullscreenButton.classList.contains('fullscreen')) {
-            // Выход из полноэкранного режима
-            if (document.exitFullscreen) {
-                document.exitFullscreen();
-            } else if (document.webkitExitFullscreen) { // Для Safari
-                document.webkitExitFullscreen();
-            } else if (document.msExitFullscreen) { // Для IE/Edge
-                document.msExitFullscreen();
-            }
-            fullscreenButton.classList.remove('fullscreen');
-        } else {
-            // Запрос полноэкранного режима
-            if (container.requestFullscreen) {
-                container.requestFullscreen();
-            } else if (container.webkitRequestFullscreen) { // Для Safari
-                container.webkitRequestFullscreen();
-            } else if (container.msRequestFullscreen) { // Для IE/Edge
-                container.msRequestFullscreen();
-            }
-            fullscreenButton.classList.add('fullscreen');
-        }
-    });
-
-    // Отслеживание изменений полноэкранного состояния
-    document.addEventListener('fullscreenchange', () => {
-        console.log(document.fullscreenElement ? 'Полноэкранный режим включен' : 'Полноэкранный режим выключен');
-        onWindowResize();
-    });
-
-    document.addEventListener('DOMContentLoaded',onContentLoaded);
-
-    window.addEventListener('resize', onWindowResize);
-</script>
-
+    <script src="/static/js/jsmain.js" type="module"></script>
+  
   </body>
 </html>
