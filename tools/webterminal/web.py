@@ -441,7 +441,9 @@ SITE_PORT = 8080
 
 #"driver", "wideRoad", "road"
 
-CAMERA_SELECT = "wideRoad"  #"road"
+
+
+CAMERA_SELECT = "road"  #"road"
 
 ## UTILS
 async def play_sound(sound: str):
@@ -534,11 +536,12 @@ async def offer(request: 'web.Request'):
   except Exception as e:
     return web.json_response({"ok": False, "error": f"bad request: {e}; {request} "}, status=400)
 
-  body = StreamRequestBody(params["sdp"], [CAMERA_SELECT], [], [])  #"testJoystick""carState"
+  body = StreamRequestBody(params["sdp"], [CAMERA_SELECT], ["testJoystick"], ["carState"])  #"testJoystick""carState"
   # body_json = json.dumps(dataclasses.asdict(body))
   body_json = dataclasses.asdict(body)
   # body_json = {'sdp': params["sdp"], 'cameras': [CAMERA_SELECT], 'bridge_services_in': [], 'bridge_services_out': ["carState"]}
   webrtcd_url = f"http://{WEBRTCD_HOST}:{WEBRTCD_PORT}/stream"
+
 
   try:
     # cloudlog.info("Sending offer to webrtcd...")

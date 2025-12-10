@@ -13,6 +13,7 @@ public:
   void write(void* data, size_t size);
   inline void write(kj::ArrayPtr<capnp::byte> array) { write(array.begin(), array.size()); }
 
+
 private:
   void flushCache(bool last_chunk);
 

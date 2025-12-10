@@ -90,17 +90,7 @@ export function createPeerConnection(pc) {
         console.log("Received non-video track:", evt.track.kind);
       }
     });
-  setInterval(async () => {
-  const stats = await pc.getStats();
-  stats.forEach((r) => {
-    if (r.type === 'inbound-rtp' && r.kind === 'video') {
-      console.log('[STATS] video bytesReceived=', r.bytesReceived,
-                  'framesDecoded=', r.framesDecoded,
-                  'framesDropped=', r.framesDropped,
-                  'keyFramesDecoded=', r.keyFramesDecoded);
-    }
-  });
-}, 1000);
+
   return pc;
 }
 
