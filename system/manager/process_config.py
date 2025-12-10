@@ -108,8 +108,8 @@ procs = [
   DaemonProcess("manage_athenad", "system.athena.manage_athenad", "AthenadPid"),
 
   NativeProcess("loggerd", "system/loggerd", ["./loggerd"], logging),
-  # NativeProcess("encoderd", "system/loggerd", ["./encoderd"], always_run), #only_onroad
-  NativeProcess("stream_encoderd", "system/loggerd", ["./encoderd", "--stream"], always_run), #notcar
+  NativeProcess("encoderd", "system/loggerd", ["./encoderd"], only_onroad), #only_onroad
+  NativeProcess("stream_encoderd", "system/loggerd", ["./encoderd", "--stream"], notcar), #notcar always_run
   PythonProcess("logmessaged", "system.logmessaged", always_run),
 
 
@@ -157,7 +157,7 @@ procs = [
   # remote_control_mode
   # debug procs
   NativeProcess("bridge", "cereal/messaging", ["./bridge"], or_(remote_control_mode, notcar)),
-  # PythonProcess("webrtcd", "system.webrtc.webrtcd", or_(remote_control_mode, notcar)),
+  PythonProcess("webrtcd", "system.webrtc.webrtcd", or_(always_run, notcar)),
   # PythonProcess("webterminal", "tools.webterminal.web", remote_control_mode),
 
   PythonProcess("webjoystick", "tools.bodyteleop.web", notcar),

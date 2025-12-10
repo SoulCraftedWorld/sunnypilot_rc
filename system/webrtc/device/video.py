@@ -14,6 +14,12 @@ class LiveStreamVideoStreamTrack(TiciVideoStreamTrack):
     "road": "livestreamRoadEncodeData",
   }
 
+  # camera_to_sock_mapping = {
+  #   "driver": "driverEncodeData",
+  #   "wideRoad": "wideRoadEncodeData",
+  #   "road": "roadEncodeData",
+  # }
+
   def __init__(self, camera_type: str):
     dt = DT_DMON if camera_type == "driver" else DT_MDL
     super().__init__(camera_type, dt)
