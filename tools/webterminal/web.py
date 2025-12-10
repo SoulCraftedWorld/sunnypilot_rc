@@ -441,7 +441,8 @@ SITE_PORT = 8080
 
 #"driver", "wideRoad", "road"
 
-CAMERA_SELECT = "driver"  #"road"
+CAMERA_SELECT = "road"  #"road"
+
 
 ## UTILS
 async def play_sound(sound: str):

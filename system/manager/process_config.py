@@ -108,9 +108,11 @@ procs = [
   DaemonProcess("manage_athenad", "system.athena.manage_athenad", "AthenadPid"),
 
   NativeProcess("loggerd", "system/loggerd", ["./loggerd"], logging),
-  NativeProcess("encoderd", "system/loggerd", ["./encoderd"], only_onroad),
-  NativeProcess("stream_encoderd", "system/loggerd", ["./encoderd", "--stream"], notcar),
+  # NativeProcess("encoderd", "system/loggerd", ["./encoderd"], always_run), #only_onroad
+  NativeProcess("stream_encoderd", "system/loggerd", ["./encoderd", "--stream"], always_run), #notcar
   PythonProcess("logmessaged", "system.logmessaged", always_run),
+
+
 
   NativeProcess("camerad", "system/camerad", ["./camerad"], driverview, enabled=not WEBCAM),
   PythonProcess("webcamerad", "tools.webcam.camerad", driverview, enabled=WEBCAM),
