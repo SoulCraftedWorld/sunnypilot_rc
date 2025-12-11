@@ -368,7 +368,6 @@ def simulation_task():
       # params.put_bool("JoystickDebugMode", False)
 
       JoystickDebugMode = params.get_bool("JoystickDebugMode")
-      #RemoteControlMode = params.get_bool("RemoteControlMode")
       CP = sm['carParams']
       notCar = CP.notCar
 

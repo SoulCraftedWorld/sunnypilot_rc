@@ -37,9 +37,6 @@ def ublox(started: bool, params: Params, CP: car.CarParams) -> bool:
     params.put_bool("UbloxAvailable", use_ublox)
   return started and use_ublox
 
-def remote_control_mode(started: bool, params: Params, CP: car.CarParams) -> bool:
-  return started and True #params.get_bool("RemoteControlMode")
-
 def joystick(started: bool, params: Params, CP: car.CarParams) -> bool:
   return started and params.get_bool("JoystickDebugMode")
 
@@ -113,7 +110,6 @@ procs = [
   PythonProcess("logmessaged", "system.logmessaged", always_run),
 
 
-
   NativeProcess("camerad", "system/camerad", ["./camerad"], driverview, enabled=not WEBCAM),
   PythonProcess("webcamerad", "tools.webcam.camerad", driverview, enabled=WEBCAM),
   NativeProcess("logcatd", "system/logcatd", ["./logcatd"], only_onroad, platform.system() != "Darwin"),
@@ -154,13 +150,11 @@ procs = [
   PythonProcess("statsd", "system.statsd", always_run),
   PythonProcess("feedbackd", "selfdrive.ui.feedback.feedbackd", only_onroad),
 
-
-  # remote_control_mode
   # debug procs
 
-  NativeProcess("bridge", "cereal/messaging", ["./bridge"], or_(remote_control_mode, notcar)),
+  NativeProcess("bridge", "cereal/messaging", ["./bridge"], or_(always_run, notcar)),
   PythonProcess("webrtcd", "system.webrtc.webrtcd", or_(always_run, notcar)),
-  # PythonProcess("webterminal", "tools.webterminal.web", remote_control_mode),
+  PythonProcess("webterminal", "tools.webterminal.web", always_run),
 
 
   PythonProcess("webjoystick", "tools.bodyteleop.web", notcar),

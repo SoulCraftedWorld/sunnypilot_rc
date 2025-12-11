@@ -38,12 +38,6 @@ class DeveloperLayout(Widget):
         callback=self._on_joystick_debug_mode,
       ),
       toggle_item(
-        "Remote Control Mode",
-        description=DESCRIPTIONS["remote_control_mode"],
-        initial_state=self._params.get_bool("RemoteControlMode"),
-        callback=self._on_remote_control_mode,
-      ),
-      toggle_item(
         "Longitudinal Maneuver Mode",
         description="",
         initial_state=self._params.get_bool("LongitudinalManeuverMode"),
