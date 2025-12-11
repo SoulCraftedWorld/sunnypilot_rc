@@ -159,7 +159,7 @@ procs = [
   # debug procs
 
   NativeProcess("bridge", "cereal/messaging", ["./bridge"], or_(remote_control_mode, notcar)),
-  #PythonProcess("webrtcd", "system.webrtc.webrtcd", or_(always_run, notcar)),
+  PythonProcess("webrtcd", "system.webrtc.webrtcd", or_(always_run, notcar)),
   # PythonProcess("webterminal", "tools.webterminal.web", remote_control_mode),
 
 

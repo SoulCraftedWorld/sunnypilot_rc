@@ -1,7 +1,7 @@
 <html>
   <head>
     <meta charset="UTF-8"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
     <title>E-Golf Terminal</title>
     <link rel="stylesheet" href="/static/main.css">
     <link rel="stylesheet" href="/static/css/bootstrap.min.css"/>
@@ -26,7 +26,7 @@
         }
         header {
             background: rgb(15 45 76 / 57%);
-            color: #2a3a4c;
+            color: #e6f4f1;
             position: absolute;
             border-bottom-right-radius: 1.5vh;
             border-bottom-left-radius: 1.5vh;
@@ -63,7 +63,7 @@
 
 
                                     <div class="slider-container track-vertical" id="slider-accel-brake-container-id">
-                                        <div id="joystick-value-throttle" class="slider-status track-vertical top">66%</div>
+                                        <div id="joystick-value-throttle" class="slider-status track-vertical top"></div>
                                         <div id="slider-accel-brake" class="slider track-vertical">
                                             <div class="track-vertical slider-gradient brake"></div>
                                             <div class="track-vertical slider-line center"></div>
@@ -95,30 +95,30 @@
 
                         <div class="icon-container" style="position: absolute; right: 0.7vw;">
 
-                                    <div >
-                                        <div class="col-sm-12 col-md-6 details">
-                                            <div class="icon-sub-sub-panel">
+                                    <div style="min-width: 11vh;">
+                                        <div class="col-sm-12 col-md-6 details" style="align-items: center; gap: 1vh; width: 100%;scale: 1.5;height: 100%;">
+                                             <p class="bi bi-speedometer2 small" style="padding-left: 4px;" ></p>
+                                            <div class="icon-sub-sub-panel" >
                                                     <i id="speed" class="pre-blob1">-</i>
                                                 </div>
-                                                <p class="bi bi-arrow-repeat small" style="padding-left: 4px;"
-                                                > km/h</p>
                                       </div>
                                     </div>
-                                    <div >
-                                        <div class="col-sm-12 col-md-6 details">
+                                    <div style="min-width: 11vh;">
+                                        <div class="col-sm-12 col-md-6 details" style="align-items: center; gap: 1vh;">
+                                             <p class="bi bi-arrow-down-up small" style="padding-left: 4px;" ></p>
                                             <div class="icon-sub-sub-panel">
                                                     <i id="ping-time" class="pre-blob1">-</i>
-                                                </div>
-                                                <p class="bi bi-arrow-repeat small" style="padding-left: 4px;"
-                                                > ping</p>
+                                            </div>
+
                                       </div>
                                     </div>
-                                    <div >
-                                        <div class="col-sm-12 col-md-6 details">
-                                      <div class="icon-sub-sub-panel">
-                                        <i id="battery" class="pre-blob1">-</i>
-                                      </div>
-                                      <p class="bi bi-battery-half small" style="padding-left: 4px;"> battery</p>
+                                    <div style="min-width: 11vh;">
+                                        <div class="col-sm-12 col-md-6 details" style="align-items: center; gap: 1vh;">
+                                            <p class="bi bi-battery-half small" style="padding-left: 4px;"></p>
+                                          <div class="icon-sub-sub-panel">
+                                            <i id="battery" class="pre-blob1">-</i>
+                                          </div>
+
                                      </div>
                                     </div>
 
@@ -216,6 +216,6 @@
     <script src="/static/libs/chartjs-adapter-moment.min.js"></script>
 
     <script src="/static/js/jsmain.js" type="module"></script>
-  
+
   </body>
 </html>

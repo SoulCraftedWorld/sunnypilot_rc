@@ -384,8 +384,10 @@ def simulation_task():
         msg.carState.steeringAngleDeg = steeringAngleTurn.get_value()
         msg.carState.brake = brakeTurn.get_value()
         msg.carState.vEgo = vEgoTurn.update()
-
-        pm.send('carState', msg)
+        try:
+          pm.send('carState', msg)
+        except Exception as e:
+          print(f"simulation_task: pm.send carState exception {e}")
 
         steeringAngleTurn.update()
         brakeTurn.update()
@@ -550,7 +552,8 @@ async def offer(request: 'web.Request'):
       async with session.post(webrtcd_url, json=body_json) as resp:
         text = await resp.text()
         if resp.status != 200:
-          logger.warning("Offer failed, sending offer to webrtcd...")
+
+          logger.warning(f"Offer failed, sending offer to webrtcd... Status: {resp.status}, Body: {text}. request: {params}")
           # Проксируем ошибку как JSON, чтобы фронт красиво её показал
           return web.json_response({
             "ok": False,
