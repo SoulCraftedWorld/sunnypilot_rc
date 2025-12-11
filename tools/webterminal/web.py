@@ -132,7 +132,6 @@ async def offer(request: 'web.Request'):
 
 def main():
   # Enable joystick debug mode
-  simulation_start()
   Params().put_bool("JoystickDebugMode", False)  # True
   # Params().put_bool("RemoteControlMode", True)  # True
 
