@@ -33,7 +33,7 @@ class CarController(CarControllerBase):
 
     # **** Steering Controls ************************************************ #
 
-    if self.frame % self.CCP.STEER_STEP == 0:
+    if self.frame % self.CCP.STEER_STEP == 0: # STEER_STEP = HCA_01/HCA_1 message frequency 50Hz  = 2
       # Logic to avoid HCA state 4 "refused":
       #   * Don't steer unless HCA is in state 3 "ready" or 5 "active"
       #   * Don't steer at standstill
@@ -78,7 +78,7 @@ class CarController(CarControllerBase):
     # **** Acceleration Controls ******************************************** #
 
     if self.CP.openpilotLongitudinalControl:
-      if self.frame % self.CCP.ACC_CONTROL_STEP == 0:
+      if self.frame % self.CCP.ACC_CONTROL_STEP == 0: # ACC_06/ACC_07/ACC_System frequency 50Hz
         acc_control = self.CCS.acc_control_value(CS.out.cruiseState.available, CS.out.accFaulted, CC.longActive)
         accel = float(np.clip(actuators.accel, self.CCP.ACCEL_MIN, self.CCP.ACCEL_MAX) if CC.longActive else 0)
         stopping = actuators.longControlState == LongCtrlState.stopping
@@ -117,9 +117,13 @@ class CarController(CarControllerBase):
     gra_send_ready = self.CP.pcmCruise and CS.gra_stock_values["COUNTER"] != self.gra_acc_counter_last
     if gra_send_ready and (CC.cruiseControl.cancel or CC.cruiseControl.resume):
       can_sends.append(self.CCS.create_acc_buttons_control(self.packer_pt, self.CAN.ext, CS.gra_stock_values,
-                                                           cancel=CC.cruiseControl.cancel, resume=CC.cruiseControl.resume))
+                                                           cancel=CC.cruiseControl.cancel, resume=CC.cruiseControl.resume,
+                                                           acc_control_use=CC.cruiseControl.override,
+                                                           acc_set_control=CC.cruiseControl.override # speedOverrideDEPRECATED accelOverrideDEPRECATED
+                                                           ))
 
     new_actuators = actuators.as_builder()
+    # STEER_MAX = 300  # Max heading control assist torque 3.00 Nm
     new_actuators.torque = self.apply_torque_last / self.CCP.STEER_MAX
     new_actuators.torqueOutputCan = self.apply_torque_last
 

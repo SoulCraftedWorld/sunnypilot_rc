@@ -12,35 +12,27 @@ from openpilot.common.swaglog import cloudlog
 LongCtrlState = car.CarControl.Actuators.LongControlState
 MAX_LAT_ACCEL = 3.0
 
-# controlsd -> card
-# or
-# joystickd -> card
 
-
-# self.params.get_bool("AlphaLongitudinalEnabled")
-# ret.openpilotLongitudinalControl = True
-# ret.pcmCruise = not AlphaLongitudinalEnabled
-# Ели меняем AlphaLongitudinalEnabled, то перезапускаем card
 def joystickd_thread():
   params = Params()
   cloudlog.info("joystickd is waiting for CarParams")
   CP = messaging.log_from_bytes(params.get("CarParams", block=True), car.CarParams)
   VM = VehicleModel(CP)
-  cloudlog.info("joystickd got CarParams")
+
   sm = messaging.SubMaster(['carState', 'onroadEvents', 'liveParameters', 'selfdriveState', 'testJoystick'], frequency=1. / DT_CTRL)
   pm = messaging.PubMaster(['carControl', 'controlsState'])
 
-  rk = Ratekeeper(50, print_delay_threshold=None)
+  rk = Ratekeeper(100, print_delay_threshold=None)
   while 1:
     sm.update(0)
 
     cc_msg = messaging.new_message('carControl')
     cc_msg.valid = True
     CC = cc_msg.carControl
-    CC.enabled =  True #sm['selfdriveState'].enabled
-    CC.latActive = True # sm['selfdriveState'].active and not sm['carState'].steerFaultTemporary and not sm['carState'].steerFaultPermanent
-    CC.longActive = True # CC.enabled and not any(e.overrideLongitudinal for e in sm['onroadEvents']) and CP.openpilotLongitudinalControl
-    CC.cruiseControl.cancel = False # sm['carState'].cruiseState.enabled and (not CC.enabled or not CP.pcmCruise)
+    CC.enabled = sm['selfdriveState'].enabled
+    CC.latActive = sm['selfdriveState'].active and not sm['carState'].steerFaultTemporary and not sm['carState'].steerFaultPermanent
+    CC.longActive = CC.enabled and not any(e.overrideLongitudinal for e in sm['onroadEvents']) and CP.openpilotLongitudinalControl
+    CC.cruiseControl.cancel = sm['carState'].cruiseState.enabled and (not CC.enabled or not CP.pcmCruise)
     CC.hudControl.leadDistanceBars = 2
 
     actuators = CC.actuators

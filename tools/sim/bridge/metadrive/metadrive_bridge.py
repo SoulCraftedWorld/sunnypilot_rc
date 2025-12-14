@@ -1,7 +1,7 @@
 import math
 from multiprocessing import Queue
 
-from metadrive.component.sensors.base_camera import _cuda_enable
+# from metadrive.component.sensors.base_camera import _cuda_enable
 from metadrive.component.map.pg_map import MapGenerateMethod
 
 from openpilot.tools.sim.bridge.common import SimulatorBridge
@@ -58,12 +58,15 @@ class MetaDriveBridge(SimulatorBridge):
     self.test_duration = test_duration if self.test_run else math.inf
 
   def spawn_world(self, queue: Queue):
+    reyrn
     sensors = {
       "rgb_road": (RGBCameraRoad, W, H, )
     }
 
     if self.dual_camera:
       sensors["rgb_wide"] = (RGBCameraWide, W, H)
+
+    _cuda_enable = False
 
     config = dict(
       use_render=self.should_render,

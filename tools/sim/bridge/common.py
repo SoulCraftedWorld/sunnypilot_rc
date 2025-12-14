@@ -122,7 +122,7 @@ Ignition: {self.simulator_state.ignition} Engaged: {self.simulator_state.is_enga
       throttle_out = steer_out = brake_out = 0.0
       throttle_op = steer_op = brake_op = 0.0
 
-      self.simulator_state.cruise_button = 0
+      self.simulator_state.cruise_button = 1  # 0
       self.simulator_state.left_blinker = False
       self.simulator_state.right_blinker = False
 

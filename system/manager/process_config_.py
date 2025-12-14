@@ -22,7 +22,7 @@ def notcar(started: bool, params: Params, CP: car.CarParams) -> bool:
   return started and CP.notCar
 
 def iscar(started: bool, params: Params, CP: car.CarParams) -> bool:
-  return started and True # not CP.notCar
+  return started and not CP.notCar
 
 def logging(started: bool, params: Params, CP: car.CarParams) -> bool:
   run = (not CP.notCar) or not params.get_bool("DisableLogging")
@@ -105,12 +105,11 @@ procs = [
   DaemonProcess("manage_athenad", "system.athena.manage_athenad", "AthenadPid"),
 
   NativeProcess("loggerd", "system/loggerd", ["./loggerd"], logging),
-  # NativeProcess("encoderd", "system/loggerd", ["./encoderd"], only_onroad), #only_onroad
-  NativeProcess("stream_encoderd", "system/loggerd", ["./encoderd", "--stream"], joystick), #notcar always_run
+  NativeProcess("encoderd", "system/loggerd", ["./encoderd"], only_onroad),
+  NativeProcess("stream_encoderd", "system/loggerd", ["./encoderd", "--stream"], notcar),
   PythonProcess("logmessaged", "system.logmessaged", always_run),
 
-
-  NativeProcess("camerad", "system/camerad", ["./camerad"], or_(joystick, driverview), enabled=not WEBCAM),
+  NativeProcess("camerad", "system/camerad", ["./camerad"], driverview, enabled=not WEBCAM),
   PythonProcess("webcamerad", "tools.webcam.camerad", driverview, enabled=WEBCAM),
   NativeProcess("logcatd", "system/logcatd", ["./logcatd"], only_onroad, platform.system() != "Darwin"),
   NativeProcess("proclogd", "system/proclogd", ["./proclogd"], only_onroad, platform.system() != "Darwin"),
@@ -118,45 +117,45 @@ procs = [
   PythonProcess("timed", "system.timed", always_run, enabled=not PC),
 
   PythonProcess("modeld", "selfdrive.modeld.modeld", and_(only_onroad, is_stock_model)),
-  PythonProcess("dmonitoringmodeld", "selfdrive.modeld.dmonitoringmodeld", or_(joystick, driverview), enabled=(WEBCAM or not PC)),
+  PythonProcess("dmonitoringmodeld", "selfdrive.modeld.dmonitoringmodeld", driverview, enabled=(WEBCAM or not PC)),
 
-  PythonProcess("sensord", "system.sensord.sensord", or_(joystick, only_onroad), enabled=not PC),
+  PythonProcess("sensord", "system.sensord.sensord", only_onroad, enabled=not PC),
   NativeProcess("ui", "selfdrive/ui", ["./ui"], always_run, watchdog_max_dt=(5 if not PC else None)),
   PythonProcess("raylib_ui", "selfdrive.ui.ui", always_run, enabled=False, watchdog_max_dt=(5 if not PC else None)),
   PythonProcess("soundd", "selfdrive.ui.soundd", only_onroad),
   PythonProcess("locationd", "selfdrive.locationd.locationd", only_onroad),
-  #NativeProcess("_pandad", "selfdrive/pandad", ["./pandad"], always_run, enabled=False),
+  NativeProcess("_pandad", "selfdrive/pandad", ["./pandad"], always_run, enabled=False),
   PythonProcess("calibrationd", "selfdrive.locationd.calibrationd", only_onroad),
   PythonProcess("torqued", "selfdrive.locationd.torqued", only_onroad),
   PythonProcess("controlsd", "selfdrive.controls.controlsd", and_(not_joystick, iscar)),
   PythonProcess("joystickd", "tools.joystick.joystickd", or_(joystick, notcar)),
   PythonProcess("selfdrived", "selfdrive.selfdrived.selfdrived", only_onroad),
-  PythonProcess("card", "selfdrive.car.card", or_(joystick, only_onroad)), # only_onroad
+  PythonProcess("card", "selfdrive.car.card", only_onroad),
   PythonProcess("deleter", "system.loggerd.deleter", always_run),
   PythonProcess("dmonitoringd", "selfdrive.monitoring.dmonitoringd", driverview, enabled=(WEBCAM or not PC)),
   PythonProcess("qcomgpsd", "system.qcomgpsd.qcomgpsd", qcomgps, enabled=TICI),
-  #PythonProcess("pandad", "selfdrive.pandad.pandad", always_run),
+  PythonProcess("pandad", "selfdrive.pandad.pandad", always_run),
   PythonProcess("paramsd", "selfdrive.locationd.paramsd", only_onroad),
   PythonProcess("lagd", "selfdrive.locationd.lagd", only_onroad),
   NativeProcess("ubloxd", "system/ubloxd", ["./ubloxd"], ublox, enabled=TICI),
   PythonProcess("pigeond", "system.ubloxd.pigeond", ublox, enabled=TICI),
   PythonProcess("plannerd", "selfdrive.controls.plannerd", not_long_maneuver),
   PythonProcess("maneuversd", "tools.longitudinal_maneuvers.maneuversd", long_maneuver),
-  PythonProcess("radard", "selfdrive.controls.radard", or_(joystick, only_onroad)),
+  PythonProcess("radard", "selfdrive.controls.radard", only_onroad),
   PythonProcess("hardwared", "system.hardware.hardwared", always_run),
   PythonProcess("tombstoned", "system.tombstoned", always_run, enabled=not PC),
   PythonProcess("updated", "system.updated.updated", only_offroad, enabled=not PC),
-  # PythonProcess("uploader", "system.loggerd.uploader", always_run),
+  PythonProcess("uploader", "system.loggerd.uploader", always_run),
   PythonProcess("statsd", "system.statsd", always_run),
   PythonProcess("feedbackd", "selfdrive.ui.feedback.feedbackd", only_onroad),
 
   # debug procs
-  NativeProcess("bridge", "cereal/messaging", ["./bridge"], or_(joystick, notcar)),
-  PythonProcess("webrtcd", "system.webrtc.webrtcd", or_(joystick, notcar)),
-  PythonProcess("webterminal", "tools.webterminal.web", always_run),
+  NativeProcess("bridge", "cereal/messaging", ["./bridge"], or_(always_run, notcar)),
+  PythonProcess("webrtcd", "system.webrtc.webrtcd", or_(remote_control_mode, notcar)),
+  PythonProcess("webterminal", "tools.webterminal.web", remote_control_mode),
 
-  # PythonProcess("webjoystick", "tools.bodyteleop.web", notcar),
-  # PythonProcess("joystick", "tools.joystick.joystick_control", and_(joystick, iscar)),
+  PythonProcess("webjoystick", "tools.bodyteleop.web", notcar),
+  PythonProcess("joystick", "tools.joystick.joystick_control", and_(joystick, iscar)),
 
   # sunnylink <3
   DaemonProcess("manage_sunnylinkd", "sunnypilot.sunnylink.athena.manage_sunnylinkd", "SunnylinkdPid"),
@@ -178,11 +177,12 @@ procs += [
   PythonProcess("mapd_manager", "sunnypilot.mapd.mapd_manager", always_run),
 ]
 
+
 if os.path.exists("./github_runner.sh"):
   procs += [NativeProcess("github_runner_start", "system/manager", ["./github_runner.sh", "start"], and_(only_offroad, use_github_runner), sigkill=False)]
 
-# if os.path.exists("../../sunnypilot/sunnylink/uploader.py"):
-#   procs += [PythonProcess("sunnylink_uploader", "sunnypilot.sunnylink.uploader", use_sunnylink_uploader_shim)]
+if os.path.exists("../../sunnypilot/sunnylink/uploader.py"):
+  procs += [PythonProcess("sunnylink_uploader", "sunnypilot.sunnylink.uploader", use_sunnylink_uploader_shim)]
 
 if os.path.exists("../../third_party/copyparty/copyparty-sfx.py"):
   sunnypilot_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))

@@ -9,6 +9,7 @@
         "command": "clang++ -o common/swaglog.o -c -std=c++1z -DQCOM2 -mcpu=cortex-a57 -DSUNNYPILOT -g -fPIC -O2 -Wunused -Werror -Wshadow -Wno-unknown-warning-option -Wno-inconsistent-missing-override -Wno-c99-designator -Wno-reorder-init-list -Wno-vla-cxx-extension -DQCOM2 -mcpu=cortex-a57 -DSUNNYPILOT -Ithird_party/opencl/include -I. -Ithird_party/acados/include -Ithird_party/acados/include/blasfeo/include -Ithird_party/acados/include/hpipm/include -Ithird_party/catch2/include -Ithird_party/libyuv/include -Ithird_party/json11 -Ithird_party/linux/include -Ithird_party/snpe/include -Ithird_party -Imsgq common/swaglog.cc",
         "directory": "/data/openpilot",
         "file": "/data/openpilot/common/swaglog.cc",
+
         "output": "/data/openpilot/common/swaglog.o"
     },
     {

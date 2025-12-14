@@ -11,9 +11,11 @@ from openpilot.tools.sim.lib.common import SimulatorState
 
 class SimulatedCar:
   """Simulates a honda civic 2022 (panda state + can messages) to OpenPilot"""
-  packer = CANPacker("honda_civic_ex_2022_can_generated")
+  # packer = CANPacker("honda_civic_ex_2022_can_generated")
 
-  def __init__(self):
+  def __init__(self, car_model = "vw_mqb"):
+    self._car_model = car_model
+    self.packer = CANPacker(self._car_model)
     self.pm = messaging.PubMaster(['can', 'pandaStates'])
     self.sm = messaging.SubMaster(['carControl', 'controlsState', 'carParams', 'selfdriveState'])
     self.cp = self.get_car_can_parser()
@@ -21,9 +23,9 @@ class SimulatedCar:
     self.params = Params()
     self.obd_multiplexing = False
 
-  @staticmethod
-  def get_car_can_parser():
-    dbc_f = 'honda_civic_ex_2022_can_generated'
+  def get_car_can_parser(self):
+    # dbc_f = 'honda_civic_ex_2022_can_generated'
+    dbc_f = self._car_model
     checks = []
     return CANParser(dbc_f, checks, 0)
 
