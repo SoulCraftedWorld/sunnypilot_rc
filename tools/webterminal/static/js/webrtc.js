@@ -132,16 +132,10 @@ export function start(pc, dc) {
     console.error('addTransceiver video failed:', e);
   }
 
-  negotiate(pc)
-    .catch(function (err) {
-      console.error('negotiate error:', err);
-      alert('Negotiation failed: ' + err);
-    });
-
-
   var parameters = {"ordered": true};
   dc = pc.createDataChannel('data', parameters);
   dc.onclose = function() {
+      console.error('DataChannel close:');
       if (controlCommandInterval!==null){
         clearInterval(controlCommandInterval);
       }
@@ -152,12 +146,7 @@ export function start(pc, dc) {
 
   function sendJoystickOverDataChannel() {
     const {steer_deg, accel_brake, isJoystickActive ,isJoystickCruise} = getJoystickXY();
-    let buttons = [isJoystickActive, isJoystickCruise, false, false, false, false];
-    if (getIsJoystickActive()) {
-        buttons.push(true);
-    }else {
-        buttons.push(false);
-    }
+    let buttons = [true, false, isJoystickActive, isJoystickCruise, false, false, false, false];
     var message = JSON.stringify({type: "testJoystick", data: {axes: [steer_deg, accel_brake], buttons: buttons}})
     dc.send(message);
   }
@@ -178,6 +167,7 @@ export function start(pc, dc) {
   }
 
   dc.onopen = function() {
+      console.warn('DataChannel onopen:');
       if (controlCommandInterval!==null){
         clearInterval(controlCommandInterval);
       }
@@ -194,36 +184,48 @@ export function start(pc, dc) {
   dc.onmessage = function(evt) {
     const text = textDecoder.decode(evt.data);
     const msg = JSON.parse(text);
-    if (carStaterIndex % 100 == 0 && msg.type === 'carState') {
-      const batteryLevel = Math.round(msg.data.fuelGauge * 100);
-      $("#battery").text(batteryLevel + "%");
-      batteryPoints.push({'x': new Date().getTime(), 'y': batteryLevel});
-      if (batteryPoints.length > 1000) {
-        batteryPoints.shift();
-      }
-      chartBattery.update();
 
-      const curSpeed =  Math.round(msg.data.vEgo * 3.6); // m/s to km/h
-      $("#speed").text(curSpeed + " km/h");
+    if (msg.type === 'carState') {
+        if (carStaterIndex % 50 == 0) {
+            const batteryLevel = Math.round(msg.data.fuelGauge * 100);
+            $("#battery").text(batteryLevel + "%");
+            batteryPoints.push({'x': new Date().getTime(), 'y': batteryLevel});
+            if (batteryPoints.length > 1000) {
+                batteryPoints.shift();
+            }
+            chartBattery.update();
 
-      setSteerCurrent(msg.data.steeringAngleDeg);
+            const curSpeed = Math.round(msg.data.vEgo * 3.6); // m/s to km/h
+            $("#speed").text(curSpeed + " km/h");
 
-      if (msg.data.cruiseState.available){
-         if (msg.data.cruiseState.enabled){
-            $("#cruise").text('CC:ON');
-         } else{
-             $("#cruise").text("CC:OFF");
-         }
-      } else{
-          $("#cruise").text("CC:NAN");
-      }
+            if (msg.data.cruiseState.available) {
+                if (msg.data.cruiseState.enabled) {
+                    $("#cruise").text('CC:ON');
+                } else {
+                    $("#cruise").text("CC:OFF");
+                }
+            } else {
+                $("#cruise").text("CC:NAN");
+            }
+        }
+        setSteerCurrent(msg.data.steeringAngleDeg);
     }
 
     carStaterIndex += 1;
     lastChannelMessageTime = new Date().getTime();
     $(".pre-blob").addClass('blob');
   };
+
+
+  negotiate(pc)
+    .catch(function (err) {
+      console.error('negotiate error:', err);
+      alert('Negotiation failed: ' + err);
+    });
+
+  return { pc, dc };
 }
+
 
 /*
 struct CarState {
@@ -359,6 +361,7 @@ struct CarState {
 }
  */
 export function stop(pc, dc) {
+  console.log("stop pc", pc);
   if (dc) {
     dc.close();
   }

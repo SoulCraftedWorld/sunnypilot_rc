@@ -498,7 +498,12 @@ def car_simulation_task():
 
         tj = sm['testJoystick']
         tele_axes = list(tj.axes)
-        tele_arm = bool(tj.buttons[0]) if hasattr(tj, 'buttons') and len(tj.buttons) >= 1 else False
+        but_list = list(tj.buttons) if hasattr(tj, 'buttons') and len(tj.buttons) >= 1 else []
+
+        buts = ""
+        for b in but_list:
+          buts += "1," if b else "0,"
+        but = f"[{buts}]"
         # params.put_bool("JoystickDebugMode", False)
 
         JoystickDebugMode = params.get_bool("JoystickDebugMode")
@@ -506,7 +511,7 @@ def car_simulation_task():
         notCar = CP.notCar
 
         # message = f"DebugMode {JoystickDebugMode}, RC_Mode {RemoteControlMode}, notCar {notCar}, joystick ({testJoystick}) axes: {tele_axes}, arm: {tele_arm},  Selfdrive: {sm['selfdriveState'].active}, CC En {carControl.enabled}; steerSet:{carControl.actuators.steeringAngleDeg:.1f}; "
-        message = f"DebugMode {JoystickDebugMode}, notCar {notCar}, joystick ({testJoystick}) axes: {tele_axes}, arm: {tele_arm},  Selfdrive: {sm['selfdriveState'].active}, CC En {carControl.enabled}; SteerSim: {steeringAngleTurn.get_value():.1f}; steerAct:{carControl.actuators.steeringAngleDeg:.1f}; "
+        message = f"DebugMode {JoystickDebugMode}, notCar {notCar}, joystick ({testJoystick}) axes: {tele_axes}, but: {but}, Selfdrive: {sm['selfdriveState'].active}, CC En {carControl.enabled}; SteerSim: {steeringAngleTurn.get_value():.1f}; steerAct:{carControl.actuators.steeringAngleDeg:.1f}; "
         print(message)
 
         for b in range(30, 0, -1):
