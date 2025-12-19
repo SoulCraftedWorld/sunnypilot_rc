@@ -72,7 +72,12 @@ function toggleJoystickCruiseActiveBtnState() {
 
 // ========= Steering Wheel Joystick ==========
 let steeringWheelJoystick = null;
-function  initSteeringWheelJoystick(maxRotationAngle=750) {
+function  initSteeringWheelJoystick(maxRotationAngle=710) {
+    if (steeringWheelJoystick !== null) {
+        steeringWheelJoystick.destroy();
+        steeringWheelJoystick = null;
+    }
+
     steeringWheelJoystick = new SteeringWheelJoystick(
         'steer-wheel-joystick-container', {
             steerSetCallback: setSteerTurnValue,

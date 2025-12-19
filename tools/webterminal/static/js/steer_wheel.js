@@ -24,11 +24,13 @@ export class SteeringWheelJoystick {
         this.realTotalRotationCCW = 0; // Real total RotationCCW
         this.realHardwareRotationCCW = 0; // Real hardware RotationCCW
         this.lastAngle = 0; // Last angle for calculation
-        this.turnHandlerTimer = null;
         this.publishLastTime = 0;
         this.lastFiilState = 0;
 
-
+        // Subscriptions and timers
+        this._unsubs = [];
+        this._timers = new Map(); // key -> intervalId / timeoutId
+        this._ro = null;
 
         this.dragFrameData = {
             isDragging: false,
@@ -67,20 +69,66 @@ export class SteeringWheelJoystick {
         this.debudMode = this.getBoolOption(options.debudMode ,false); // Debug mode
 
         this.initJoystick();
-        console.log('Joystick created successfully.');
         if (this.isVisibleOnStart){
             this.steerMainCircle.classList.add('visible');
             this.placeSteerJoyOnInit();
             this.steerMainCircle.classList.add('active');
             this._onFirstInit();
             this.isFirstInit = true;
+            this._recalcAfterShow();
         }
+        this._initResizeObserver();
+        console.log('Joystick created successfully.');
     }
+
+    _updateGeometryFromDOM() {
+      const rect = this.steerMainCircle.getBoundingClientRect();
+      this.centerX = rect.left + rect.width / 2;
+      this.centerY = rect.top + rect.height / 2;
+      this.radius = rect.width / 2; // круг, aspect-ratio 1/1
+    }
+
+    _initResizeObserver() {
+      if (!('ResizeObserver' in window)) return;
+      this._ro = new ResizeObserver(() => {
+        if (this.steerMainCircle.classList.contains('visible')) {
+          this._updateGeometryFromDOM();
+        }
+      });
+      this._ro.observe(this.steerMainCircle);
+    }
+
+    _bindTransitionFix() {
+      this.steerMainCircle.addEventListener('transitionend', (e) => {
+        // нас интересуют изменения размеров/позиции
+        if (e.propertyName === 'width' || e.propertyName === 'height' || e.propertyName === 'transform') {
+          this._updateGeometryFromDOM();
+        }
+      });
+    }
+
+    _recalcAfterShow() {
+      // 1) сразу (если уже видим)
+      this._updateGeometryFromDOM();
+
+      // 2) после двух кадров — когда браузер применит layout
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          this._updateGeometryFromDOM();
+        });
+      });
+
+      // 3) и после окончания transition
+      setTimeout(() => this._updateGeometryFromDOM(), 450);
+    }
+
+
 
     resizeHandler(){
         if (this.steerMainCircle.classList.contains('visible')) {
             this.placeSteerJoyOnInit();
             this.steerMainCircle.classList.add('active');
+            this._updateGeometryFromDOM();
             this._onFirstInit();
             this.isFirstInit = true;
             console.log('Joystick resized and repositioned.');
@@ -340,9 +388,11 @@ export class SteeringWheelJoystick {
         if (!this.isJoystickActive || this.dragFrameData.isDragging) return false;
 
         if (this.steerMainCircle.classList.contains('active')) {
+            this._updateGeometryFromDOM();
             // Synchronize with drag handle
             if (this.isFirstInit) {
                 if (!this._onSecondInitCheckCenter(x, y)){
+                    this._bindTransitionFix();
                     this._printLog('On Start: second init check center failed.');
                     return false;
                 }
@@ -378,6 +428,9 @@ export class SteeringWheelJoystick {
         if (!this.isJoystickActive) return;
 
         if (!this.isTurning || this.dragFrameData.isDragging) {
+            if(this.dragFrameData.isDragging){
+                this._updateGeometryFromDOM();
+            }
             return;
         }
 
@@ -598,10 +651,7 @@ export class SteeringWheelJoystick {
         }
     }
     _stopTurnHandler(){
-        if (this.turnHandlerTimer) {
-            clearInterval(this.turnHandlerTimer);
-            this.turnHandlerTimer = null;
-        }
+        this._clearTimer('turnHandlerTimer');
     }
 
     _turnSteerToZero(){
@@ -610,20 +660,14 @@ export class SteeringWheelJoystick {
             this.realTotalRotationCCW -= this.realTotalRotationCCW > 45 ? 2 : 1;
             if (this.realTotalRotationCCW <= 0) {
                 this.realTotalRotationCCW = 0;
-                if (this.turnHandlerTimer) {
-                    clearInterval(this.turnHandlerTimer);
-                    this.turnHandlerTimer = null;
-                }
+                this._clearTimer('turnHandlerTimer');
                 isLast = true;
             }
         } else if (this.realTotalRotationCCW < 0) {
             this.realTotalRotationCCW += this.realTotalRotationCCW < -45 ? 2 : 1;
             if (this.realTotalRotationCCW >= 0) {
                 this.realTotalRotationCCW = 0;
-                if (this.turnHandlerTimer) {
-                    clearInterval(this.turnHandlerTimer);
-                    this.turnHandlerTimer = null;
-                }
+                this._clearTimer('turnHandlerTimer');
                 isLast = true;
             }
         } else {
@@ -646,7 +690,7 @@ export class SteeringWheelJoystick {
             if (this.stepBackActive) {
                 if (this.realTotalRotationCCW !== 0) {
                     // Turn back to zero if stepBackDegree is set
-                    this.turnHandlerTimer = setInterval(() => {
+                    this._setInterval('turnHandlerTimer',() => {
                         if (this._turnSteerToZero()) {
                             this._setNewSteerNoWait(0);
                             this._stopTurnHandler();
@@ -658,7 +702,7 @@ export class SteeringWheelJoystick {
             } else {
                 this._sendSteerValToCb(0); // stop control by joystick
                 // Turn according real hardware rotation
-                this.turnHandlerTimer = setInterval(() => {
+                this._setInterval('turnHandlerTimer',() => {
                     this.totalRotationCCW = this.realHardwareRotationCCW;
                     this._turnHandlerProcess(2);
                 }, 10);
@@ -700,7 +744,7 @@ export class SteeringWheelJoystick {
         if (this.isTurning) {
             if (this.totalRotationCCW !== this.realTotalRotationCCW) {
                 this._printLog('Start turn handler with stepDegreePerSec.');
-                this.turnHandlerTimer = setInterval(() => {
+                this._setInterval('turnHandlerTimer',() => {
                     if (this.totalRotationCCW !== this.realTotalRotationCCW) {
                         this._turnHandlerProcess(1);
                     } else {
@@ -727,7 +771,7 @@ export class SteeringWheelJoystick {
                     // this._raf = requestAnimationFrame(tick);
             } else {
                 this._printLog('Start turn handler with 50ms interval.');
-                this.turnHandlerTimer = setInterval(() => {
+                this._setInterval('turnHandlerTimer',() => {
                     if (this.totalRotationCCW !== this.realTotalRotationCCW) {
                         this._turnHandlerProcess(1);
                         // Restart handler with higher frequency
@@ -939,7 +983,7 @@ export class SteeringWheelJoystick {
                     return touch;
                 }
             }
-            this._printLog('Target touch not found for identifier:', targetIdentifier);
+            this._printLog('Target touch not found for identifier:'+ targetIdentifier);
         }
         return null;
     }
@@ -998,6 +1042,69 @@ export class SteeringWheelJoystick {
         return isHandleNext;
     }
 
+    _addListener(target, type, handler, opts) {
+      target.addEventListener(type, handler, opts);
+      this._unsubs.push(() => target.removeEventListener(type, handler, opts));
+    }
+
+    _setInterval(key, fn, ms) {
+      // если таймер с таким ключом уже есть — убиваем
+      if (this._timers.has(key)) {
+        clearInterval(this._timers.get(key));
+        this._timers.delete(key);
+      }
+
+      const id = setInterval(fn, ms);
+      this._timers.set(key, id);
+      return id;
+    }
+
+    _setTimeout(key, fn, ms) {
+      if (this._timers.has(key)) {
+        clearTimeout(this._timers.get(key));
+        this._timers.delete(key);
+      }
+      const id = setTimeout(fn, ms);
+      this._timers.set(key, id);
+      return id;
+    }
+
+    _clearTimer(key) {
+      const id = this._timers.get(key);
+      if (!id) return;
+
+      clearInterval(id);
+      clearTimeout(id);
+      this._timers.delete(key);
+    }
+
+    _clearAllTimers() {
+      for (const id of this._timers.values()) {
+        clearInterval(id);
+        clearTimeout(id);
+      }
+      this._timers.clear();
+    }
+
+    destroy() {
+      // 1) Остановить активные процессы
+      this.isJoystickActive = false;
+      this.isTurning = false;
+      this.dragFrameData.isDragging = false;
+
+      // 2) Таймеры
+      this._clearAllTimers();
+
+      // 3) ResizeObserver
+      if (this._ro) { this._ro.disconnect(); this._ro = null; }
+
+      // 4) Снять все addEventListener, которые добавлены через _addListener
+      for (const off of this._unsubs) off();
+      this._unsubs.length = 0;
+
+    }
+
+
     // ===== external uses =====
     /**
      * Function for setting the joystick enable or disable - to show or hide
@@ -1024,7 +1131,7 @@ export class SteeringWheelJoystick {
             circleWidthVal = rectArea.width * 0.3;
             x = this.isLeftPosition ? rectArea.left + circleWidthVal * 1.5 : rectArea.right - circleWidthVal * 1.5;
             y = rectArea.top + rectArea.height * 0.4;
-            this._printLog('Placing joystick on init at:', x, y);
+            this._printLog('Placing joystick on init at: ['+ x+', '+ y+'] with width: '+ circleWidthVal);
         // }else {
         //     this._printLog('Joystick already visible, no placing on init.');
         //     return;

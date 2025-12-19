@@ -104,6 +104,14 @@
 .control-button.indicator {
     border: 0.5vh solid transparent;
 }
+.no-select {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  user-select: none;
+
+  /* чтобы на iOS не вылезало меню копирования */
+  -webkit-touch-callout: none;
+}
 .control-button.indicator.none { border-color: transparent; }
 .control-button.indicator.red { border-color: #d35b46; }
 .control-button.indicator.yellow { border-color: #d7bf47; }
