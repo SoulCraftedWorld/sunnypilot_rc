@@ -1,6 +1,6 @@
 import { getXY } from "./controls.js";
 import { pingPoints, batteryPoints, chartPing, chartBattery } from "./plots.js";
-import {getJoystickXY, getIsJoystickActive, onWindowResizeNext, setSteerMaxRotationAngle, setSteerCurrent} from "./joystick_buttons.js";
+import {getJoystickXY, onWindowResizeNext, setSteerMaxRotationAngle, setSteerCurrent, setCruiseEnabledActive} from "./joystick_buttons.js";
 
 export let controlCommandInterval = null;
 export let latencyInterval = null;
@@ -201,11 +201,14 @@ export function start(pc, dc) {
             if (msg.data.cruiseState.available) {
                 if (msg.data.cruiseState.enabled) {
                     $("#cruise").text('CC:ON');
+                    setCruiseEnabledActive(true);
                 } else {
                     $("#cruise").text("CC:OFF");
+                    setCruiseEnabledActive(false);
                 }
             } else {
                 $("#cruise").text("CC:NAN");
+                setCruiseEnabledActive(false);
             }
         }
         setSteerCurrent(msg.data.steeringAngleDeg);

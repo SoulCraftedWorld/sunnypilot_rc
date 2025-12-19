@@ -95,6 +95,9 @@
     color: #dce7d9;
     box-shadow: 0 0 8px 10px rgb(62 133 150 / 83%);
 }
+.control-button.enabled {
+    color: #1d7106;
+}
 .control-button.active.indicator {
     border: 0.8vh solid transparent;
 }

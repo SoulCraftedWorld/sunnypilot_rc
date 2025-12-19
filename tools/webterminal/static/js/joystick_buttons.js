@@ -502,3 +502,14 @@ export function onWindowResizeNext() {
 export function getIsJoystickActive(){
     return isJoystickActive;
 }
+
+export function setCruiseEnabledActive(isEnabled){
+    const state = joystickCruiseActiveBtn.classList.contains('enabled');
+    if(state !== isEnabled){
+        joystickCruiseActiveBtn.classList.remove('enabled');
+        if (isEnabled){
+            joystickCruiseActiveBtn.classList.add('active');
+        }
+    }
+}
+
