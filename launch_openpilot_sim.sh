@@ -24,6 +24,7 @@ export SKIP_FW_QUERY="1"
 export FINGERPRINT="VOLKSWAGEN_GOLF_MK7"
 
 #export BLOCK="${BLOCK},camerad,loggerd,encoderd,micd,logmessaged"
-export BLOCK="${BLOCK},pandad,loggerd,micd"
+export BLOCK="${BLOCK},pandad,loggerd,micd,logmessaged,uploader,_pandad"
 
 exec ./launch_chffrplus.sh
+

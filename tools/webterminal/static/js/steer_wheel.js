@@ -87,6 +87,11 @@ export class SteeringWheelJoystick {
         }
     }
 
+    setMaxRotationAngle(angle) {
+        this.maxRotationAngle = angle;
+
+    }
+
     getBoolOption(option, defState){
         return option === null || option === undefined ? defState:  option;
     }
@@ -100,6 +105,7 @@ export class SteeringWheelJoystick {
         this.steerMainCircleName = 'steer-circle';
         this.steerKnobName = 'steer-knob';
         this.steerCircleImageName = 'steer-circle-image';
+        this.steerCircleImageFollowName = 'follow';
         this.steerInnerCircleName = 'steer-inner-circle';
         this.steerOuterCircleName = 'steer-outer-circle';
         this.steerCenterCircleName = 'steer-center-circle';
@@ -1102,7 +1108,6 @@ export class SteeringWheelJoystick {
             this.steerHarwareCircle.style.transform = `rotate(${this.realHardwareRotationCCW % 360}deg)`;
             this._printLog('Set hardware steer angle to:', this.realHardwareRotationCCW);
         }
-
     }
 
     /* CCW - counterClockwiseMode, CW - clockwise */

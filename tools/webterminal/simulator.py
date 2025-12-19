@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-import time
 from openpilot.common.params import Params
 
 
@@ -15,9 +14,7 @@ import time
 from typing import List, Tuple
 
 from cereal import log
-from openpilot.common.realtime import Ratekeeper
 from openpilot.common.swaglog import cloudlog
-
 
 import signal
 import threading
@@ -29,18 +26,13 @@ from enum import Enum
 from multiprocessing import Process, Queue, Value
 from abc import ABC, abstractmethod
 
-from opendbc.car.honda.values import CruiseButtons
 from openpilot.common.realtime import Ratekeeper
-from openpilot.tools.webterminal.sim_car import SimVwCar
-
+from openpilot.tools.webterminal.sim_car import SimVwCar, SimState, CruiseButtons, vec3
 
 import traceback
 import cereal.messaging as messaging
 
-from opendbc.car.volkswagen.values import VolkswagenFlags
 from openpilot.common.params import Params
-from openpilot.selfdrive.pandad.pandad_api_impl import can_list_to_can_capnp
-from openpilot.tools.sim.lib.common import SimulatorState
 
 
 def rk_loop(function, hz, exit_event: threading.Event):
@@ -50,7 +42,7 @@ def rk_loop(function, hz, exit_event: threading.Event):
     rk.keep_time()
 
 
-simulator_state = SimulatorState()
+simulator_state = SimState()
 
 # ---------- Константы / параметры ----------
 PUB_HZ_PANDA = 10.0          # Гц: pandaStates + peripheralState
@@ -423,7 +415,7 @@ def simulation_task():
         notCar = CP.notCar
 
         #message = f"DebugMode {JoystickDebugMode}, RC_Mode {RemoteControlMode}, notCar {notCar}, joystick ({testJoystick}) axes: {tele_axes}, arm: {tele_arm},  Selfdrive: {sm['selfdriveState'].active}, CC En {carControl.enabled}; steerSet:{carControl.actuators.steeringAngleDeg:.1f}; "
-        message = f"DebugMode {JoystickDebugMode}, notCar {notCar}, joystick ({testJoystick}) axes: {tele_axes}, arm: {tele_arm},  Selfdrive: {sm['selfdriveState'].active}, CC En {carControl.enabled}; steerSet:{carControl.actuators.steeringAngleDeg:.1f}; "
+        message = f"DebugMode {JoystickDebugMode}, notCar {notCar}, joystick ({testJoystick}) axes: {tele_axes}, arm: {tele_arm},  Selfdrive: {sm['selfdriveState'].active}, CC En {carControl.enabled}; SteerSim: {steeringAngleTurn.get_value():.1f}; steerSet:{carControl.actuators.steeringAngleDeg:.1f}; "
         print(message)
 
 
@@ -451,32 +443,36 @@ def simulation_task():
       cloudlog.error(f"[simulation_task] Exception in main loop: {e}")
       time.sleep(5)
 
-vec3 = namedtuple("vec3", ["x", "y", "z"])
 
 def car_simulation_task():
   global simulator_state
 
-  simulator_state.velocity = vec3
+  simulator_state.velocity = vec3(0,0,0)
+  counter = 0
+  last_can = 0.0
+  test_pattern = True
 
   while True:
     try:
-      pm = messaging.PubMaster(['carParams'])
+      # pm = messaging.PubMaster(['carParams'])
       sm = messaging.SubMaster(['carParams', 'carControl', 'controlsState', "testJoystick", "selfdriveState"])
       batt = 1.
 
-      try:
-        params = Params()
-        msg = messaging.new_message('carParams')
-        msg.carParams.brand =  "volkswagen" #'mock'  #
-        msg.carParams.carFingerprint = "VOLKSWAGEN_GOLF_MK7"
-        msg.carParams.notCar = False
-        pm.send('carParams', msg)
-      except Exception as e:
-        print(f"car_simulation_task: pm.send carParams exception {e}")
+      params = Params()
 
-      steeringAngleTurn = TurnCounter(-540.0, 540.0, 5.0)
+      # try:
+      #   params = Params()
+      #   msg = messaging.new_message('carParams')
+      #   msg.carParams.brand =  "volkswagen" #'mock'  #
+      #   msg.carParams.carFingerprint = "VOLKSWAGEN_GOLF_MK7"
+      #   msg.carParams.notCar = False
+      #   pm.send('carParams', msg)
+      # except Exception as e:
+      #   print(f"car_simulation_task: pm.send carParams exception {e}")
+
+      steeringAngleTurn = TurnCounter(-540.0, 540.0, 2.0)
       brakeTurn = TurnCounter(0.0, 50.0, 5.0)
-      vEgoTurn = TurnCounter(0.0, 100.0, 1.0)
+      vEgoTurn = TurnCounter(0.0, 40.0, 0.2)
       fuelGaugeTurn = TurnCounter(0.0, 1.0, 0.01, initial_bottom=False)
 
 
@@ -496,7 +492,6 @@ def car_simulation_task():
         params.put("IsOffroad", False)
 
 
-
         sm.update(1)
         testJoystick = sm.recv_frame.get('testJoystick', 0)
         carControl = sm['carControl']
@@ -511,19 +506,17 @@ def car_simulation_task():
         notCar = CP.notCar
 
         # message = f"DebugMode {JoystickDebugMode}, RC_Mode {RemoteControlMode}, notCar {notCar}, joystick ({testJoystick}) axes: {tele_axes}, arm: {tele_arm},  Selfdrive: {sm['selfdriveState'].active}, CC En {carControl.enabled}; steerSet:{carControl.actuators.steeringAngleDeg:.1f}; "
-        message = f"DebugMode {JoystickDebugMode}, notCar {notCar}, joystick ({testJoystick}) axes: {tele_axes}, arm: {tele_arm},  Selfdrive: {sm['selfdriveState'].active}, CC En {carControl.enabled}; steerSet:{carControl.actuators.steeringAngleDeg:.1f}; "
+        message = f"DebugMode {JoystickDebugMode}, notCar {notCar}, joystick ({testJoystick}) axes: {tele_axes}, arm: {tele_arm},  Selfdrive: {sm['selfdriveState'].active}, CC En {carControl.enabled}; SteerSim: {steeringAngleTurn.get_value():.1f}; steerAct:{carControl.actuators.steeringAngleDeg:.1f}; "
         print(message)
 
         for b in range(30, 0, -1):
-          simulator_state.user_brake = 0
+
           simulator_state.valid = True
           simulator_state.is_engaged = False
           simulator_state.ignition = True
-
-          simulator_state.velocity.x = vEgoTurn.get_value()
-          simulator_state.velocity.y = 0.0
-          simulator_state.velocity.z = 0.0
-
+          vEgoTurnVal = vEgoTurn.get_value()
+          simulator_state.velocity = vec3(vEgoTurnVal, 0, 0)
+          simulator_state.velocityLin = vEgoTurnVal
           # simulator_state.bearing = 0
           # simulator_state.gps = GPSState()
           # simulator_state.imu = IMUState()
@@ -538,7 +531,8 @@ def car_simulation_task():
           simulator_state.user_brake = brake
           simulator_state.user_torque = 0
 
-          simulator_state.cruise_button = 1
+          #"CANCEL" "RESUME" "SET"  "ACCEL"  "DECEL"  "GAP" "MAIN":
+          simulator_state.cruise_button = CruiseButtons.SET
 
           simulator_state.left_blinker = False
           simulator_state.right_blinker = True
@@ -547,6 +541,22 @@ def car_simulation_task():
           brakeTurn.update()
           vEgoTurn.update()
           fuelGaugeTurn.update()
+
+          # ---- can (пульс/тестовый кадр) ----
+          # now = time.monotonic()
+          # if now - last_can >= 1.0 / PUB_HZ_CAN:
+          #   frames: List[log.CanData] = []
+          #   if test_pattern:
+          #     counter = (counter + 1) & 0xFFFFFFFF
+          #     payload = struct.pack("<I4x", counter)  # 4 байта счётчика + паддинг
+          #     frames.append(_pack_can_frame(0x100, payload, DEFAULT_BUS))
+          #
+          #   # Даже пустая публикация полезна как пульс для некоторых подписчиков
+          #   msg = messaging.new_message("can", len(frames))
+          #   msg.can = frames
+          #   pm.send("can", msg)
+          #
+          #   last_can = now
 
           time.sleep(0.1)
 
@@ -557,7 +567,7 @@ def car_simulation_task():
 
 def main():
   # Enable joystick debug mode
-  # Params().put_bool("JoystickDebugMode", False)  # True
+  Params().put_bool("JoystickDebugMode", True)  # True
   _exit_event = threading.Event()
   global simulator_state
   simulated_car = SimVwCar(car_model='vw_mqb')

@@ -25,7 +25,6 @@ def load_interfaces(brand_names):
       ret[model_name] = CarInterface
   return ret
 
-
 def _get_interface_names() -> dict[str, list[str]]:
   # returns a dict of brand name and its respective models
   brand_names = {}
@@ -92,7 +91,9 @@ def fingerprint(can_recv: CanRecvCallable, can_send: CanSendCallable, set_obd_mu
   ecu_rx_addrs = set()
 
   start_time = time.monotonic()
-  if not skip_fw_query:
+  # FIXME: temporary disable FW query for testing
+  # ===========================
+  if 1==2 and not skip_fw_query:
     if cached_params is not None and cached_params.brand != "mock" and len(cached_params.carFw) > 0 and \
        cached_params.carVin is not VIN_UNKNOWN and not disable_fw_cache:
       carlog.warning("Using cached CarParams")
@@ -112,9 +113,17 @@ def fingerprint(can_recv: CanRecvCallable, can_send: CanSendCallable, set_obd_mu
 
     exact_fw_match, fw_candidates = match_fw_to_car(car_fw, vin)
   else:
-    vin_rx_addr, vin_rx_bus, vin = -1, -1, VIN_UNKNOWN
-    exact_fw_match, fw_candidates, car_fw = True, set(), []
+    # --- Firmware query ---
+    vin_rx_addr, vin_rx_bus, vin = 22, 0, 'WVWZZZAUZJ8901120'
+    exact_fw_match, fw_candidates, car_fw = True, ['WVWZZZAUZJ8901120'], []
+    ecu_rx_addrs = {12, 13}  # For testing purposes
     cached = False
+    fixed_fingerprint = 'VOLKSWAGEN_GOLF_MK7'  # For testing purposes
+    #===========================
+
+    # vin_rx_addr, vin_rx_bus, vin = -1, -1, VIN_UNKNOWN
+    # exact_fw_match, fw_candidates, car_fw = True, set(), []
+    # cached = False
 
   if not is_valid_vin(vin):
     carlog.error({"event": "Malformed VIN", "vin": vin})
@@ -142,9 +151,9 @@ def fingerprint(can_recv: CanRecvCallable, can_send: CanSendCallable, set_obd_mu
 
   if fixed_fingerprint:
     car_fingerprint = fixed_fingerprint
-    source = CarParams.FingerprintSource.fixed
+    source = CarParams.FingerprintSource.fw #fixed
 
-  carlog.error({"event": "fingerprinted", "car_fingerprint": str(car_fingerprint), "source": source, "fuzzy": not exact_match,
+  carlog.error({"event1": "fingerprinted", "car_fingerprint": str(car_fingerprint), "source": source, "fuzzy": not exact_match,
                 "cached": cached, "fw_count": len(car_fw), "ecu_responses": list(ecu_rx_addrs), "vin_rx_addr": vin_rx_addr,
                 "vin_rx_bus": vin_rx_bus, "fingerprints": repr(finger), "fw_query_time": fw_query_time})
 

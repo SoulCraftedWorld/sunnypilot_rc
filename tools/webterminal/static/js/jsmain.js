@@ -1,9 +1,9 @@
 // jsmain.js
 
 // Импортируем модули проекта
-import "./joystick_buttons.js";        // нужен только для инициализации (DOMContentLoaded внутри него)
-import "./slider_controller.js";       // если там только классы/регистрация
-import "./steer_wheel.js";             // если там только классы
+import "./joystick_buttons.js";
+import "./slider_controller.js";
+import "./steer_wheel.js";
 import "./controls.js";
 import "./webrtc.js";
 import {onWindowResize, start, lastChannelMessageTime} from "./webrtc.js";
@@ -82,29 +82,15 @@ document.addEventListener("DOMContentLoaded", onContentLoaded);
 window.addEventListener("resize", onWindowResize);
 
 
-
-// document.addEventListener('keydown', (e)=>(handleKeyX(e.key.toLowerCase(), 1)));
-// document.addEventListener('keyup', (e)=>(handleKeyX(e.key.toLowerCase(), 0)));
-// $(".keys").bind("mousedown touchstart", (e)=>handleKeyX($(e.target).attr('id').replace('key-', ''), 1));
-// $(".keys").bind("mouseup touchend", (e)=>handleKeyX($(e.target).attr('id').replace('key-', ''), 0));
-
-
-
-//
-//$("#plan-button").click(executePlan);
-// $(".sound").click((e)=>{
-//   const sound = $(e.target).attr('id').replace('sound-', '')
-//   return playSoundRequest(sound);
-// });
-
 setInterval( () => {
   const dt = new Date().getTime();
   if ((dt - lastChannelMessageTime) > 1000) {
     $(".pre-blob").removeClass('blob');
-    $("#battery").text("-");
-    $("#ping-time").text('-');
-    $("#speed").text('-');
+    $("#battery").text("--");
+    $("#ping-time").text('--');
+    $("#speed").text('--');
     $("video")[0].load();
+    $("#cruise").text("--");
   }
 }, 5000);
 

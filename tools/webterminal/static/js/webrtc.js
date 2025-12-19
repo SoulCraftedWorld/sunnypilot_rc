@@ -1,6 +1,6 @@
 import { getXY } from "./controls.js";
 import { pingPoints, batteryPoints, chartPing, chartBattery } from "./plots.js";
-import {getJoystickXY, getIsJoystickActive, onWindowResizeNext} from "./joystick_buttons.js";
+import {getJoystickXY, getIsJoystickActive, onWindowResizeNext, setSteerMaxRotationAngle, setSteerCurrent} from "./joystick_buttons.js";
 
 export let controlCommandInterval = null;
 export let latencyInterval = null;
@@ -8,7 +8,6 @@ export let lastChannelMessageTime = null;
 
 export function onWindowResize(){
         onWindowResizeNext();
-
 }
 
 export async function offerRtcRequest(sdp, type) {
@@ -22,12 +21,6 @@ export async function offerRtcRequest(sdp, type) {
       throw new Error(`offer failed ${res.status}: ${txt.slice(0,400)}`);
   }
    return res;
-  //  const txt = await res.text();
-  // let ans;
-  // try { ans = JSON.parse(txt); } catch (e) { throw new Error(`bad JSON from /offer: ${e.message}`); }
-  // if (!ans || typeof ans.sdp !== 'string') throw new Error(`invalid answer payload: ${txt.slice(0,200)}`);
-  // if (!ans.type) ans.type = 'answer';
-  // return res;
 }
 
 export function offerRtcRequest2(sdp, type) {
@@ -52,14 +45,11 @@ export function createPeerConnection(pc) {
 
   pc = new RTCPeerConnection(config);
 
-
   const videoEl = document.getElementById('video');
   videoEl.autoplay = true;
   videoEl.muted = true;
   videoEl.playsInline = true;
 
-  // connect audio / video
-    //pc.addEventListener('track', (evt) => {
   pc.addEventListener('track', (evt) => {
       console.log("[VIDEO] Adding Tracks!", evt.track.kind, evt.streams);
       if (evt.track.kind === 'video') {
@@ -133,13 +123,6 @@ export function negotiate(pc) {
 }
 
 
-function isMobile() {
-    let check = false;
-    // (function(a){if(/(android|bb\d+|meego).+mobile|avantgo|bada\/|blackberry|blazer|compal|elaine|fennec|hiptop|iemobile|ip(hone|od)|iris|kindle|lge |maemo|midp|mmp|mobile.+firefox|netfront|opera m(ob|in)i|palm( os)?|phone|p(ixi|re)\/|plucker|pocket|psp|series(4|6)0|symbian|treo|up\.(browser|link)|vodafone|wap|windows ce|xda|xiino/i.test(a)||/1207|6310|6590|3gso|4thp|50[1-6]i|770s|802s|a wa|abac|ac(er|oo|s\-)|ai(ko|rn)|al(av|ca|co)|amoi|an(ex|ny|yw)|aptu|ar(ch|go)|as(te|us)|attw|au(di|\-m|r |s )|avan|be(ck|ll|nq)|bi(lb|rd)|bl(ac|az)|br(e|v)w|bumb|bw\-(n|u)|c55\/|capi|ccwa|cdm\-|cell|chtm|cldc|cmd\-|co(mp|nd)|craw|da(it|ll|ng)|dbte|dc\-s|devi|dica|dmob|do(c|p)o|ds(12|\-d)|el(49|ai)|em(l2|ul)|er(ic|k0)|esl8|ez([4-7]0|os|wa|ze)|fetc|fly(\-|_)|g1 u|g560|gene|gf\-5|g\-mo|go(\.w|od)|gr(ad|un)|haie|hcit|hd\-(m|p|t)|hei\-|hi(pt|ta)|hp( i|ip)|hs\-c|ht(c(\-| |_|a|g|p|s|t)|tp)|hu(aw|tc)|i\-(20|go|ma)|i230|iac( |\-|\/)|ibro|idea|ig01|ikom|im1k|inno|ipaq|iris|ja(t|v)a|jbro|jemu|jigs|kddi|keji|kgt( |\/)|klon|kpt |kwc\-|kyo(c|k)|le(no|xi)|lg( g|\/(k|l|u)|50|54|\-[a-w])|libw|lynx|m1\-w|m3ga|m50\/|ma(te|ui|xo)|mc(01|21|ca)|m\-cr|me(rc|ri)|mi(o8|oa|ts)|mmef|mo(01|02|bi|de|do|t(\-| |o|v)|zz)|mt(50|p1|v )|mwbp|mywa|n10[0-2]|n20[2-3]|n30(0|2)|n50(0|2|5)|n7(0(0|1)|10)|ne((c|m)\-|on|tf|wf|wg|wt)|nok(6|i)|nzph|o2im|op(ti|wv)|oran|owg1|p800|pan(a|d|t)|pdxg|pg(13|\-([1-8]|c))|phil|pire|pl(ay|uc)|pn\-2|po(ck|rt|se)|prox|psio|pt\-g|qa\-a|qc(07|12|21|32|60|\-[2-7]|i\-)|qtek|r380|r600|raks|rim9|ro(ve|zo)|s55\/|sa(ge|ma|mm|ms|ny|va)|sc(01|h\-|oo|p\-)|sdk\/|se(c(\-|0|1)|47|mc|nd|ri)|sgh\-|shar|sie(\-|m)|sk\-0|sl(45|id)|sm(al|ar|b3|it|t5)|so(ft|ny)|sp(01|h\-|v\-|v )|sy(01|mb)|t2(18|50)|t6(00|10|18)|ta(gt|lk)|tcl\-|tdg\-|tel(i|m)|tim\-|t\-mo|to(pl|sh)|ts(70|m\-|m3|m5)|tx\-9|up(\.b|g1|si)|utst|v400|v750|veri|vi(rg|te)|vk(40|5[0-3]|\-v)|vm40|voda|vulc|vx(52|53|60|61|70|80|81|83|85|98)|w3c(\-| )|webc|whit|wi(g |nc|nw)|wmlb|wonu|x700|yas\-|your|zeto|zte\-/i.test(a.substr(0,4))) check = true;})(navigator.userAgent||navigator.vendor||window.opera);
-    return check;
-};
-
-
 export function start(pc, dc) {
     pc = createPeerConnection(pc);
 
@@ -168,8 +151,8 @@ export function start(pc, dc) {
   };
 
   function sendJoystickOverDataChannel() {
-    const {steer_deg, accel_brake} = getJoystickXY();
-    let buttons = [];
+    const {steer_deg, accel_brake, isJoystickActive ,isJoystickCruise} = getJoystickXY();
+    let buttons = [isJoystickActive, isJoystickCruise, false, false, false, false];
     if (getIsJoystickActive()) {
         buttons.push(true);
     }else {
@@ -220,10 +203,21 @@ export function start(pc, dc) {
       }
       chartBattery.update();
 
-      const curSpeed = Math.round(msg.data.vEgo * 3.6); // m/s to km/h
+      const curSpeed =  Math.round(msg.data.vEgo * 3.6); // m/s to km/h
       $("#speed").text(curSpeed + " km/h");
-    }
 
+      setSteerCurrent(msg.data.steeringAngleDeg);
+
+      if (msg.data.cruiseState.available){
+         if (msg.data.cruiseState.enabled){
+            $("#cruise").text('CC:ON');
+         } else{
+             $("#cruise").text("CC:OFF");
+         }
+      } else{
+          $("#cruise").text("CC:NAN");
+      }
+    }
 
     carStaterIndex += 1;
     lastChannelMessageTime = new Date().getTime();
@@ -231,7 +225,139 @@ export function start(pc, dc) {
   };
 }
 
+/*
+struct CarState {
+  # CAN health
+  canValid @26 :Bool;       # invalid counter/checksums
+  canTimeout @40 :Bool;     # CAN bus dropped out
+  canErrorCounter @48 :UInt32;
 
+  # process meta
+  cumLagMs @50 :Float32;
+
+  # car speed
+  vEgo @1 :Float32;            # best estimate of speed
+  aEgo @16 :Float32;           # best estimate of aCAN cceleration
+  vEgoRaw @17 :Float32;        # unfiltered speed from wheel speed sensors
+  vEgoCluster @44 :Float32;    # best estimate of speed shown on car's instrument cluster, used for UI
+
+  vCruise @53 :Float32;        # actual set speed
+  vCruiseCluster @54 :Float32; # set speed to display in the UI
+
+  yawRate @22 :Float32;     # best estimate of yaw rate
+  standstill @18 :Bool;
+  wheelSpeeds @2 :WheelSpeeds;
+
+  gasPressed @4 :Bool;    # this is user pedal only
+
+  # brake pedal, 0.0-1.0
+  brake @5 :Float32;      # this is user pedal only
+  brakePressed @6 :Bool;  # this is user pedal only
+  regenBraking @45 :Bool; # this is user pedal only
+  parkingBrake @39 :Bool;
+  brakeHoldActive @38 :Bool;
+
+  # steering wheel
+  steeringAngleDeg @7 :Float32;
+  steeringAngleOffsetDeg @37 :Float32; # Offset between sensors in case there multiple
+  steeringRateDeg @15 :Float32;    # optional
+  steeringTorque @8 :Float32;      # Native CAN units, only needed on cars where it's used for control
+  steeringTorqueEps @27 :Float32;  # Native CAN units, only needed on cars where it's used for control
+  steeringPressed @9 :Bool;        # is the user overring the steering wheel?
+  steeringDisengage @58 :Bool;     # more force than steeringPressed, disengages for applicable brands
+  steerFaultTemporary @35 :Bool;
+  steerFaultPermanent @36 :Bool;
+
+  invalidLkasSetting @55 :Bool;    # stock LKAS is incorrectly configured (i.e. on or off)
+  stockAeb @30 :Bool;
+  stockLkas @59 :Bool;
+  stockFcw @31 :Bool;
+  espDisabled @32 :Bool;
+  accFaulted @42 :Bool;
+  carFaultedNonCritical @47 :Bool;  # some ECU is faulted, but car remains controllable
+  espActive @51 :Bool;
+  vehicleSensorsInvalid @52 :Bool;  # invalid steering angle readings, etc.
+  lowSpeedAlert @56 :Bool;  # lost steering control due to a dynamic min steering speed
+  blockPcmEnable @60 :Bool;  # whether to allow PCM to enable this frame
+
+  # cruise state
+  cruiseState @10 :CruiseState;
+
+  # gear
+  gearShifter @14 :GearShifter;
+
+  # button presses
+  buttonEvents @11 :List(ButtonEvent);
+  buttonEnable @57 :Bool;  # user is requesting enable, usually one frame. set if pcmCruise=False
+  leftBlinker @20 :Bool;
+  rightBlinker @21 :Bool;
+  genericToggle @23 :Bool;
+
+  # lock info
+  doorOpen @24 :Bool;           # ideally includes all doors
+  seatbeltUnlatched @25 :Bool;  # driver seatbelt
+
+  # blindspot sensors
+  leftBlindspot @33 :Bool;  # Is there something blocking the left lane change
+  rightBlindspot @34 :Bool; # Is there something blocking the right lane change
+
+  fuelGauge @41 :Float32; # battery or fuel tank level from [0.0, 1.0]
+  charging @43 :Bool;
+
+  struct WheelSpeeds {
+    # optional wheel speeds
+    fl @0 :Float32;
+    fr @1 :Float32;
+    rl @2 :Float32;
+    rr @3 :Float32;
+  }
+
+  struct CruiseState {
+    enabled @0 :Bool;
+    speed @1 :Float32;
+    speedCluster @6 :Float32;  # Set speed as shown on instrument cluster
+    available @2 :Bool;
+    standstill @4 :Bool;
+    nonAdaptive @5 :Bool;
+
+    speedOffsetDEPRECATED @3 :Float32;
+  }
+
+  enum GearShifter {
+    unknown @0;
+    park @1;
+    drive @2;
+    neutral @3;
+    reverse @4;
+    sport @5;
+    low @6;
+    brake @7;
+    eco @8;
+    manumatic @9;
+  }
+
+  # send on change
+  struct ButtonEvent {
+    pressed @0 :Bool;
+    type @1 :Type;
+
+    enum Type {
+      unknown @0;
+      leftBlinker @1;
+      rightBlinker @2;
+      accelCruise @3;
+      decelCruise @4;
+      cancel @5;
+      lkas @6;
+      altButton2 @7;
+      mainCruise @8;
+      setCruise @9;
+      resumeCruise @10;
+      gapAdjustCruise @11;
+    }
+  }
+}
+ */
 export function stop(pc, dc) {
   if (dc) {
     dc.close();

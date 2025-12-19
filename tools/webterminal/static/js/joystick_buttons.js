@@ -4,6 +4,7 @@ import { SteeringWheelJoystick } from './steer_wheel.js';
 import { executePlan } from "./controls.js";
 
 let isJoystickActive = false;
+let isJoystickCruise = false;
 const plotterBut = document.getElementById('plotter-btn');
 const parametersPanel = document.getElementById('plotter-modal');
 
@@ -58,6 +59,17 @@ function toggleJoystickEnableState() {
 
 }
 
+
+function toggleJoystickCruiseActiveBtnState() {
+    joystickCruiseActiveBtn.classList.remove('active');
+    if (isJoystickCruise) {
+        isJoystickCruise = false;
+    } else {
+        joystickCruiseActiveBtn.classList.add('active');
+        isJoystickCruise = true;
+    }
+}
+
 // ========= Steering Wheel Joystick ==========
 let steeringWheelJoystick = null;
 function  initSteeringWheelJoystick(maxRotationAngle=750) {
@@ -74,10 +86,6 @@ function  initSteeringWheelJoystick(maxRotationAngle=750) {
             counterClockwiseMode: true,
 
             debudMode: true
-            // onCenterPressed: () => {
-            //     console.log('onCenterPressed');
-            //     steeringWheelJoystick.infoVisible(!steeringWheelJoystick.isInfoVisible());
-            // }
         }
     );
     steeringWheelJoystick.setJoystickEnable(true);
@@ -96,6 +104,7 @@ function handleRealSteerValue(angle){
 
 //=== joystick control buttons ===
 const joystickActiveBtn = document.getElementById('joystick-active-btn');
+const joystickCruiseActiveBtn = document.getElementById('joystick-cruise-active-btn');
 const throttleValue = document.getElementById('joystick-value-throttle');
 const stopBtn = document.getElementById('stop-btn');
 const stopBtnFrame = document.getElementById('throttle-stop-frame');
@@ -111,18 +120,20 @@ const joystickState = {
 
 };
 
-
-
-// Деактивировать элементы управления при деактивации слайдера
-
-function publishJoystickCommand() {
-
-}
-
-
 function setSteerTurnValue(value) {
     joystickState.steer_turn = value;
-    publishJoystickCommand();
+}
+
+export function setSteerMaxRotationAngle(value) {
+    if (steeringWheelJoystick !== null) {
+        steeringWheelJoystick.setMaxRotationAngle(value);
+    }
+}
+
+export function setSteerCurrent(value) {
+    if (steeringWheelJoystick !== null) {
+        steeringWheelJoystick.setHardwareSteerAngle(value);
+    }
 }
 
 
@@ -145,7 +156,6 @@ function addTurnValue(value, valueName) {
     }else if (joystickState[valueName] < 0.0) {
         joystickState[valueName] = 0.0;
     }
-    publishJoystickCommand();
     updateThrottleBrakeInfo();
 }
 
@@ -163,7 +173,6 @@ function setThrottleBrakeValue(value) {
         }else if (joystickState.throttleBrake < -100.0) {
             joystickState.throttleBrake = -100.0;
         }
-        publishJoystickCommand();
     }
 
     updateThrottleBrakeInfo();
@@ -233,8 +242,6 @@ function registerThrottleBrakeBut() {
                     clearIntervalFunc(); //Complete
                 }
 
-                //setThrottleBrakeValue(throttleBrakeSliderVal);
-
                 const newThrottleBrakeValue = (throttleBrakeSliderVal + 100) / 2;
                 sliderController.moveSliderPercent('slider-accel-brake', newThrottleBrakeValue);
 
@@ -273,7 +280,7 @@ function registerThrottleBrakeBut() {
     });
 
     setThrottleBrakeValue(0);
-     throttleBrakeSliderStepToValFunc(0, true);
+    throttleBrakeSliderStepToValFunc(0, true);
 }
 
 
@@ -456,30 +463,6 @@ function keyboardInit(){
       //updateButtons();
     });
 
-    // document.addEventListener('keydown', (e) => {
-    //   let changed = false;
-    //   if (e.key === 'w' || e.key === 'W') { onKepPressSetKeyboardWS('w'); }
-    //   else if (e.key === 's' || e.key === 'S') { onKepPressSetKeyboardWS('s'); }
-    //
-    //   if (e.key === 'a' || e.key === 'A') { onKepPressSetKeyboardAD('a'); }
-    //   else if (e.key === 'd' || e.key === 'D') { onKepPressSetKeyboardAD('d'); }
-    //
-    //   if (e.key === 'Space') {
-    //       // Reset steering wheel position
-    //       toggleBlockableStopButton();
-    //   }
-    //   if (e.key === 'v' || e.key === 'V' || e.key === 'f' || e.key === 'F' || e.key === 'f' || e.key === 'F'  ) {
-    //       // Reset steering wheel position
-    //       toggleJoystickEnableState();
-    //   }
-    //
-    // });
-    // document.addEventListener('keyup', (e) => {
-    //     if (e.key === 'a' || e.key === 'A' || e.key === 'd' || e.key === 'D') {
-    //         onKepPressSetKeyboardAD('');
-    //     }
-    // });
-
 }
 
 
@@ -489,6 +472,7 @@ document.addEventListener('DOMContentLoaded', () => {
     //joystickButtonsRegistration
     plotterBut.addEventListener('click', () => togglePlotterModal());
     joystickActiveBtn.addEventListener('click', () => toggleJoystickEnableState());
+    joystickCruiseActiveBtn.addEventListener('click', () => toggleJoystickCruiseActiveBtnState());
     stopBtn.addEventListener('click', () => toggleBlockableStopButton());
     registerThrottleBrakeBut();
 
@@ -502,7 +486,7 @@ export function getJoystickXY() {
   //let x = getSteerPercent();
   const steer_deg = getSteerAngle();
   const accel_brake = getAccelBrakeFactor();
-  return {steer_deg, accel_brake}
+  return {steer_deg, accel_brake, isJoystickActive ,isJoystickCruise}
 }
 
 export function onWindowResizeNext() {

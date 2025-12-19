@@ -32,7 +32,6 @@ EventName = log.OnroadEvent.EventName
 # forward
 carlog.addHandler(ForwardingHandler(cloudlog))
 
-
 def obd_callback(params: Params) -> ObdCallback:
   def set_obd_multiplexing(obd_multiplexing: bool):
     if params.get_bool("ObdMultiplexingEnabled") != obd_multiplexing:
@@ -70,10 +69,11 @@ class Car:
   CP_SP_capnp: custom.CarParamsSP
 
   def __init__(self, CI=None, RI=None) -> None:
+    cloudlog.warning(f"Starting card with CI={CI} RI={RI}")
     self.can_sock = messaging.sub_sock('can', timeout=20)
     self.sm = messaging.SubMaster(['pandaStates', 'carControl', 'onroadEvents'] + ['carControlSP'])
     self.pm = messaging.PubMaster(['sendcan', 'carState', 'carParams', 'carOutput', 'liveTracks'] + ['carParamsSP', 'carStateSP'])
-
+    cloudlog.warning(f"Established sockets: can_sock={self.can_sock} sm={self.sm} pm={self.pm}")
     self.can_rcv_cum_timeout_counter = 0
 
     self.CC_prev = car.CarControl.new_message()
@@ -190,6 +190,8 @@ class Car:
     # log fingerprint in sentry
     sunnypilot_interfaces.log_fingerprint(self.CP)
 
+    self.carStateLogTimer = time.monotonic()
+
   def state_update(self) -> tuple[car.CarState, custom.CarStateSP, structs.RadarDataT | None]:
     """carState update loop, driven by can"""
 
@@ -252,6 +254,10 @@ class Car:
     cs_send.carState.canErrorCounter = self.can_rcv_cum_timeout_counter
     cs_send.carState.cumLagMs = -self.rk.remaining * 1000.
     self.pm.send('carState', cs_send)
+
+    if self.carStateLogTimer < time.monotonic():
+      self.carStateLogTimer = time.monotonic() + 2.
+      cloudlog.error(f"Log carState canValid={CS.canValid}, steerState={CS.steeringAngleDeg}, steerCmd={self.CC_prev.actuators.steeringAngleDeg}")
 
     if RD is not None:
       tracks_msg = messaging.new_message('liveTracks')

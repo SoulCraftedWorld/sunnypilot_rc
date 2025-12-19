@@ -33,7 +33,7 @@ SITE_PORT = 8080
 #"driver", "wideRoad", "road"
 
 
-CAMERA_SELECT = "road"  #"road"
+CAMERA_SELECT = "wideRoad"  #"road"
 
 ## SSL
 def create_ssl_cert(cert_path: str, key_path: str):

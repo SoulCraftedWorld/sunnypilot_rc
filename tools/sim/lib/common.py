@@ -40,7 +40,7 @@ class SimulatorState:
     self.is_engaged = False
     self.ignition = True
 
-    self.velocity: vec3 = None
+    self.velocity: vec3 = vec3(0,0,0)
     self.bearing: float = 0
     self.gps = GPSState()
     self.imu = IMUState()
@@ -55,6 +55,9 @@ class SimulatorState:
 
     self.left_blinker = False
     self.right_blinker = False
+
+    self.fuelGauge: float  = 0.88  # battery or fuel tank level from [0.0, 1.0]
+    self.charging  = False
 
   @property
   def speed(self):
