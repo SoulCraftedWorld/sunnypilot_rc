@@ -504,12 +504,8 @@ export function getIsJoystickActive(){
 }
 
 export function setCruiseEnabledActive(isEnabled){
-    const state = joystickCruiseActiveBtn.classList.contains('enabled');
-    if(state !== isEnabled){
-        joystickCruiseActiveBtn.classList.remove('enabled');
-        if (isEnabled){
-            joystickCruiseActiveBtn.classList.add('active');
-        }
+    if(isJoystickCruise !== isEnabled){
+        toggleJoystickEnableState();
     }
 }
 

@@ -197,7 +197,9 @@ export function start(pc, dc) {
 
             const curSpeed = Math.round(msg.data.vEgo * 3.6); // m/s to km/h
             $("#speed").text(curSpeed + " km/h");
+        }
 
+        if (carStaterIndex % 200 == 0) {
             if (msg.data.cruiseState.available) {
                 if (msg.data.cruiseState.enabled) {
                     $("#cruise").text('CC:ON');
