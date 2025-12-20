@@ -29,7 +29,7 @@ export async function sendCtrl(cmd) {
 
   if (!resp.ok) {
     const txt = await resp.text();
-    throw new Error(`ctrl failed: ${resp.status} ${txt}`);
+    throw new Error(`ctrl failed: ${resp.status} ${txt}; send cmd: ${cmd}`);
   }
 
   return await resp.json(); // если сервер что-то возвращает
@@ -37,10 +37,8 @@ export async function sendCtrl(cmd) {
 
 function sendJoystickDirectCtrl() {
     const {steer_deg, accel_brake, isJoystickActive ,isJoystickCruise} = getJoystickXY();
-    // let buttons = [true, false, isJoystickActive, isJoystickCruise, false, false, false, false];
-    // var message = JSON.stringify({type: "testJoystick", data: {axes: [steer_deg, accel_brake], buttons: buttons}})
-    // dc.send(message);
-    var message = JSON.stringify({type: "web_control",
+
+    var message = {type: "web_control",
         data: {
           seq: Date.now(),
           steering_angle_deg: steer_deg,
@@ -48,7 +46,7 @@ function sendJoystickDirectCtrl() {
           control_enabled: isJoystickActive,
           cruise_manual_set: isJoystickCruise,
           ext_flags: [false, false, false, false]
-        }})
+        }};
       try{
         const result = sendCtrl(message);
         if (result.ok ){
@@ -109,14 +107,14 @@ export async function offerRtcRequest(sdp, type) {
   }
    return res;
 }
-
-export function offerRtcRequest2(sdp, type) {
-  return fetch('/offer', {
-    body: JSON.stringify({sdp: sdp, type: type}),
-    headers: {'Content-Type': 'application/json'},
-    method: 'POST'
-  });
-}
+//
+// export function offerRtcRequest2(sdp, type) {
+//   return fetch('/offer', {
+//     body: JSON.stringify({sdp: sdp, type: type}),
+//     headers: {'Content-Type': 'application/json'},
+//     method: 'POST'
+//   });
+// }
 
 export function pingHeadRequest() {
   return fetch('/', {
@@ -205,8 +203,8 @@ export function negotiate(pc) {
   }).then(function(answer) {
     return pc.setRemoteDescription(answer);
   }).catch(function(e) {
-
-    alert(e);
+    throw new Error(e);
+    //alert(e);
   });
 }
 
@@ -340,11 +338,14 @@ export function start(pc, dc) {
           tryToRtcmState = "sending";
           negotiate(pc)
                 .catch(function (err) {
-                  console.error('negotiate error:', err);
+                  const  err_msg = err.toString().slice(0,400);
+                  console.error('negotiate error:', err_msg);
                   tryToRtcmState = "error";
                   tryToRtcmCount -= 1;
                   if (tryToRtcmCount <= 0){
-                      alert('Negotiation failed: ' + err);
+                        clearInterval(tryToRtcmInterval);
+                        alert('Negotiation RTCM offer failed: ' + err_msg);
+                        // throw new Error(`offer failed ${err}: ${txt.slice(0,400)}`);
                   }
                 });
 
