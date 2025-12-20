@@ -76,7 +76,7 @@ class RemoteControlController:
 
     # 3) cereal pub/sub
     self.pm = messaging.PubMaster(["testJoystick"])
-    self.sm = messaging.SubMaster(["carState", "controlsState"], ignore_avg_freq=True)
+    self.sm = messaging.SubMaster(["carState", "controlsState", "carControl"], ignore_avg_freq=True)
 
     self.loop_period = 1.0 / float(cereal_publish_rate)
     self.udp_publish_period_ns = int(1e9 / float(udp_publish_rate))
@@ -121,8 +121,9 @@ class RemoteControlController:
     # Start UDP socket
     await self.udp.start()
 
-    try:
-      while not self._stop.is_set():
+    while not self._stop.is_set():
+      try:
+
         # --- mux select ---
         mj: Optional[MuxedJoystick] = self.mux.get()
 
@@ -155,9 +156,9 @@ class RemoteControlController:
 
         await asyncio.sleep(self.loop_period)
 
-    except Exception as e:
-      self._log(f"run() exception: {e}")
-      await asyncio.sleep(self.loop_period * 4)
+      except Exception as e:
+        self._log(f"rc_controller:run() exception: {e}")
+        await asyncio.sleep(self.loop_period * 4)
 
   def collect_telemetry(self, now_ns: int)-> Optional[Dict]:
       # --- telemetry out ---
@@ -167,6 +168,7 @@ class RemoteControlController:
 
       # Remote control state for debud use 'controlsState'
       ctrl_s = self.sm["controlsState"]
+      car_ctrl = self.sm["carControl"]
       cs = self.sm["carState"]
 
       telemetry: Dict[str, Any]= {
@@ -189,8 +191,6 @@ class RemoteControlController:
         "brakePressed": bool(cs.brakePressed),  # this is user pedal only
         "brakeHoldActive": bool(cs.brakeHoldActive),
         "parkingBrake": bool(cs.parkingBrake),
-        "gear": str(GearShifterNames[cs.gearShifter]) if 0 <= cs.gearShifter < len(GearShifterNames) else "invalid",
-
         "cruiseState": {
           "speed": float(cs.cruiseState.speed),
           "enabled": bool(cs.cruiseState.enabled),
@@ -236,19 +236,22 @@ class RemoteControlController:
         # leftBlindspot @ 33: Bool;  # Is there something blocking the left lane change
         # rightBlindspot @ 34: Bool;  # Is there something blocking the right lane change
 
-        "ctrl_state_steerAngleDeg": float(ctrl_s.actuators.steeringAngleDeg),
-        "ctrl_state_accel": float(ctrl_s.actuators.accel),  # m/s^2
-        "ctrl_state_gas": float(ctrl_s.actuators.gas),  # [0.0, 1.0]
-        "ctrl_state_brake": float(ctrl_s.actuators.brake),  # [0.0, 1.0]
-        "ctrl_state_torque": float(ctrl_s.actuators.torque),  # [0.0, 1.0]
-        "ctrl_state_torqueOutputCan": float(ctrl_s.actuators.torqueOutputCan),  # value sent over can to the car
-        "ctrl_state_speed": float(ctrl_s.actuators.speed),  # m/s
+        "ctrl_state_steerAngleDeg": float(car_ctrl.actuators.steeringAngleDeg),
+        "ctrl_state_accel": float(car_ctrl.actuators.accel),  # m/s^2
+        "ctrl_state_gas": float(car_ctrl.actuators.gas),  # [0.0, 1.0]
+        "ctrl_state_brake": float(car_ctrl.actuators.brake),  # [0.0, 1.0]
+        "ctrl_state_torque": float(car_ctrl.actuators.torque),  # [0.0, 1.0]
+        "ctrl_state_torqueOutputCan": float(car_ctrl.actuators.torqueOutputCan),  # value sent over can to the car
+        "ctrl_state_speed": float(car_ctrl.actuators.speed),  # m/s
 
         "rc_state_enabled": bool(ctrl_s.enabledDEPRECATED),
         "rc_state_active": bool(ctrl_s.activeDEPRECATED),
         "rc_src": str(self.mux.source_control),  # remote control "udp" | "web" | "none"
-        "rc_enabled": bool(self.mux.source_controled),  # is remote control currently enabled
+        "rc_enabled": bool(self.mux.source_controlled),  # is remote control currently enabled
       }
+      gear = getattr(cs.gearShifter, "name", None)
+      telemetry["gear"] = gear if gear is not None else str(cs.gearShifter)
+
       return telemetry
 
   def snapshots(self) -> Dict[str, SnapshotInfo]:

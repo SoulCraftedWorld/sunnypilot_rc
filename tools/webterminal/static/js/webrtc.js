@@ -151,6 +151,7 @@ export function createPeerConnection(pc) {
             try {
               await videoEl.play();
               console.log("[VIDEO] Video playback started successfully");
+              tryToRtcmState = "success"
             } catch (e) {
               console.warn('[VIDEO] video.play() blocked:', e);
               // Попробуем снова через небольшую задержку
@@ -166,6 +167,7 @@ export function createPeerConnection(pc) {
 
         } catch (e) {
           console.log("[VIDEO] Error attaching video track:", e);
+
         }
       } else {
         console.log("[VIDEO] Received non-video track:", evt.track.kind);
@@ -332,6 +334,11 @@ export function start(pc, dc) {
   function tryToRtcmSend(){
       if (tryToRtcmCount > 0){
           if (tryToRtcmState === "sending"){
+              return;
+          }else if (tryToRtcmState === "success"){
+              // clearInterval(tryToRtcmInterval);
+              // tryToRtcmInterval = null;
+              tryToRtcmCount = 4;
               return;
           }
           console.log("Trying to send RTCM via DataChannel, attempts left:", tryToRtcmCount);
@@ -516,4 +523,13 @@ export function stop(pc, dc) {
   setTimeout(function() {
     pc.close();
   }, 500);
+  if (controlCommandInterval!==null){
+    clearInterval(controlCommandInterval);
+  }
+  if (latencyInterval!==null){
+    clearInterval(latencyInterval);
+  }
+  if (directCtrlSendInterval!==null){
+    clearInterval(directCtrlSendInterval);
+  }
 }

@@ -12,6 +12,7 @@ const MAX_STEER_ANGLE = 580; // Максимальный угол поворот
 
 const sliderController = new SliderController();
 
+const IS_DEBUG_MODE = false;
 
 function togglePlotterModal() {
 
@@ -90,7 +91,7 @@ function  initSteeringWheelJoystick(maxRotationAngle=710) {
             maxRotationAngle: maxRotationAngle,
             counterClockwiseMode: true,
 
-            debudMode: true
+            debudMode: IS_DEBUG_MODE,
         }
     );
     steeringWheelJoystick.setJoystickEnable(true);

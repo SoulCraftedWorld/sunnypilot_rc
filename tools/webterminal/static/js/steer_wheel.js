@@ -1213,7 +1213,7 @@ export class SteeringWheelJoystick {
         if (this.steerHarwareCircle){
             this.steerHarwareCircle.style.display = 'flex';
             this.steerHarwareCircle.style.transform = `rotate(${this.realHardwareRotationCCW % 360}deg)`;
-            this._printLog('Set hardware steer angle to:', this.realHardwareRotationCCW);
+            // this._printLog('Set hardware steer angle to:', this.realHardwareRotationCCW);
         }
     }
 
