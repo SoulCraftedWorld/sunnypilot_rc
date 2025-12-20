@@ -124,7 +124,7 @@ class CarState(CarStateBase):
     ret.gasPressed = pt_cp.vl["Motor_20"]["MO_Fahrpedalrohwert_01"] > 0
     ret.espActive = bool(pt_cp.vl["ESP_21"]["ESP_Eingriff"])
     ret.espDisabled = pt_cp.vl["ESP_21"]["ESP_Tastung_passiv"] != 0
-    ret.seatbeltUnlatched = pt_cp.vl["Airbag_02"]["AB_Gurtschloss_FA"] != 3
+    ret.seatbeltUnlatched = False # pt_cp.vl["Airbag_02"]["AB_Gurtschloss_FA"] != 3
 
     ret.standstill = ret.vEgoRaw == 0
     ret.cruiseState.standstill = self.CP.pcmCruise and self.esp_hold_confirmation

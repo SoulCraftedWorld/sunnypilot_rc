@@ -118,8 +118,8 @@ class CarController(CarControllerBase):
     if gra_send_ready and (CC.cruiseControl.cancel or CC.cruiseControl.resume):
       can_sends.append(self.CCS.create_acc_buttons_control(self.packer_pt, self.CAN.ext, CS.gra_stock_values,
                                                            cancel=CC.cruiseControl.cancel, resume=CC.cruiseControl.resume,
-                                                           acc_control_use=CC.cruiseControl.override,
-                                                           acc_set_control=CC.cruiseControl.override # speedOverrideDEPRECATED accelOverrideDEPRECATED
+                                                           acc_control_use=CC.cruiseControl.speedOverrideDEPRECATED,
+                                                           acc_set_control=CC.cruiseControl.speedOverrideDEPRECATED
                                                            ))
 
     new_actuators = actuators.as_builder()

@@ -510,7 +510,7 @@ export function getIsJoystickActive(){
 
 export function setCruiseEnabledActive(isEnabled){
     if(isJoystickCruise !== isEnabled){
-        toggleJoystickEnableState();
+        toggleJoystickCruiseActiveBtnState();
     }
 }
 
