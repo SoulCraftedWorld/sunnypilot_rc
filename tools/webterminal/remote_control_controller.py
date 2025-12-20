@@ -259,6 +259,9 @@ class RemoteControlController:
       "web": web_sp,
       "udp": udp_sp}
 
+  def get_source_control(self):
+    return self.mux.get_source_control()
+
 async def main() -> None:
   controller = RemoteControlController()
   try:

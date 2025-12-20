@@ -128,3 +128,6 @@ class RemoteControlMux:
           self._set_debug_flag_en(False)
 
     return chosen_msg
+
+  def get_source_control(self):
+    return self.source_control

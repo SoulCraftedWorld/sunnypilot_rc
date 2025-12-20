@@ -10,6 +10,26 @@ export function onWindowResize(){
         onWindowResizeNext();
 }
 
+export async function sendCtrl(cmd) {
+  const resp = await fetch("/ctrl", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Client-ID": window.CLIENT_ID,
+      "X-Client-Kind": "web",
+    },
+    body: JSON.stringify(cmd),
+  });
+
+  if (!resp.ok) {
+    const txt = await resp.text();
+    throw new Error(`ctrl failed: ${resp.status} ${txt}`);
+  }
+
+  return await resp.json(); // если сервер что-то возвращает
+}
+
+
 export async function offerRtcRequest(sdp, type) {
   const res = await fetch('/offer', {
     method: 'POST',
@@ -146,10 +166,66 @@ export function start(pc, dc) {
 
   function sendJoystickOverDataChannel() {
     const {steer_deg, accel_brake, isJoystickActive ,isJoystickCruise} = getJoystickXY();
-    let buttons = [true, false, isJoystickActive, isJoystickCruise, false, false, false, false];
-    var message = JSON.stringify({type: "testJoystick", data: {axes: [steer_deg, accel_brake], buttons: buttons}})
-    dc.send(message);
+    // let buttons = [true, false, isJoystickActive, isJoystickCruise, false, false, false, false];
+    // var message = JSON.stringify({type: "testJoystick", data: {axes: [steer_deg, accel_brake], buttons: buttons}})
+    // dc.send(message);
+    var message = JSON.stringify({type: "web_control",
+        data: {
+          seq: Date.now(),
+          steering_angle_deg: steer_deg,
+          brake_and_accel: accel_brake,
+          control_enabled: isJoystickActive,
+          cruise_manual_set: isJoystickCruise,
+          ext_flags: [false, false, false, false]
+        }})
+      try{
+        const result = sendCtrl(message);
+        if (result.ok ){
+            if ("is_master" in result){
+                const isMaster = result["is_master"];
+                const source_control = result["source_control"]? source_control in result: "NaN";
+                if (isMaster){
+                    if (source_control === "web") {
+                        $("#ctrl_state").fontColor = "rgb(100,204,100)";
+                        $("#ctrl_state").text("WEB");
+                    }else if (source_control === "udp") {
+                        $("#ctrl_state").fontColor = "rgb(43,85,152)";
+                        $("#ctrl_state").text("UDP");
+                    }else if (source_control === "none") {
+                        $("#ctrl_state").fontColor = "rgba(248,248,245,0.87)";
+                        $("#ctrl_state").text("OFF");
+                    }else {
+                         $("#ctrl_state").fontColor = "rgba(255,217,0,0.87)";
+                        $("#ctrl_state").text(source_control);
+                    }
+                } else {
+                    if (source_control === "web") {
+                        $("#ctrl_state").fontColor = "rgb(200,0,255)";
+                        $("#ctrl_state").text("web?");
+                    }else if (source_control === "udp") {
+                        $("#ctrl_state").fontColor = "rgb(43,47,152)";
+                        $("#ctrl_state").text("UDP?");
+                    }else if (source_control === "none") {
+                        $("#ctrl_state").fontColor = "rgba(248,248,245,0.87)";
+                        $("#ctrl_state").text("OFF?");
+                    }else {
+                         $("#ctrl_state").fontColor = "rgba(255,217,0,0.87)";
+                        $("#ctrl_state").text(source_control+"?");
+                    }
+                }
+            } else {
+                $("#ctrl_state").fontColor =  "rgba(255,111,0,0.9)";
+                $("#ctrl_state").text("N/A");
+            }
+        }else {
+            $("#ctrl_state").fontColor = "rgba(255,0,0,0.88)";
+            $("#ctrl_state").text("ERR");
+        }
+      }  catch (e) {
+        console.error('sendJoystick failed:', e);
+      }
   }
+
   function checkLatency() {
     const initialTime = new Date().getTime();
     pingHeadRequest().then(function() {

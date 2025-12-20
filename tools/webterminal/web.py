@@ -103,6 +103,9 @@ async def ctrl(request: 'web.Request'):
   global remote_controller
   try:
     json_msg = await request.json()
+    if "type" not in json_msg or json_msg["type"] != "web_control" or 'data' not in json_msg:
+      return web.json_response({"ok": False, "error": f"invalid type in request: {json_msg}"}, status=400)
+    json_msg = json_msg['data']
     if "steering_angle_deg" not in json_msg or "brake_and_accel" not in json_msg or "control_enabled" not in json_msg:
       return web.json_response({"ok": False, "error": f"missing steering_angle_deg or brake_and_accel in request: {json_msg}"}, status=400)
   except Exception as e:
@@ -131,7 +134,8 @@ async def ctrl(request: 'web.Request'):
   answer = {
     "type": "ctrl_ack",
     "ok": True,
-    "is_master": is_master
+    "is_master": is_master,
+    "source_control": remote_controller.get_source_control()
   }
   return web.json_response(answer)
 
