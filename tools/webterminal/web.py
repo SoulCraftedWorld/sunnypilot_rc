@@ -259,7 +259,27 @@ def on_udp_rx(request: 'web.Request') -> web.Response:
 async def udp_bridge_process():
   global remote_mux, udp_bridge
   await udp_bridge.start()
-  remote_mux = RemoteControlMux(udp_bridge)
+  remote_mux = RemoteControlMux(
+    udp_timeout_ms=400,
+    web_timeout_ms=800,
+    on_control_mode_change_p=on_control_mode_change
+  )
+
+  telemetry_peer: Tuple[str, int] = ("192.168.1.255", 14551)
+  udp_bridge = UdpJoyTelemetryBridge(
+    listen_host="0.0.0.0",
+    listen_port=14550,
+    publisher_p=remote_mux.update_from_udp,
+    telemetry_peer=telemetry_peer,
+    use_last_sender_as_peer=True,
+    max_datagram_bytes: int = 2048,
+    logger: Optional[Any] = None
+  )
+
+
+  loop = asyncio.get_running_loop()
+  await loop.create_datagram_endpoint(lambda: udp_bridge, local_addr=(udp_bridge.listen_host, udp_bridge.listen_port))
+
 
 def udp_bridge_start():
   global udp_bridge_thread
