@@ -11,7 +11,6 @@ class ClientLease:
   client_id: str
   last_seen_ns: int
   ip: str
-  user_agent: str
   is_master: bool
 
 @dataclass
@@ -36,12 +35,11 @@ class ClientRegistry:
     self.kind = kind
     self._lock = threading.Lock()
 
-  def touch(self, client_id: str, ip: str, user_agent: str) -> bool:
+  def touch(self, client_id: str, ip: str) -> bool:
     """Register or update a client lease.
     Args:
       client_id: Unique identifier for the client.
       ip: Client's IP address.
-      user_agent: Client's user agent string.
 
     return:
       is it master
@@ -59,14 +57,12 @@ class ClientRegistry:
           client_id=client_id,
           last_seen_ns=t,
           ip=ip,
-          user_agent=user_agent,
           is_master=(client_id == self.master_id),
         )
         self.clients[client_id] = lease
       else:
         lease.last_seen_ns = t
         lease.ip = ip
-        lease.user_agent = user_agent
         lease.is_master = (client_id == self.master_id)
 
       # update is_master flags for all (optional but nice)
@@ -103,7 +99,7 @@ class ClientRegistry:
     self.purge_dead()
     return self.master_id is not None and self.master_id in self.clients
 
-  def snapshot(self):
+  def snapshot(self)->SnapshotInfo:
     self.purge_dead()
 
     with self._lock:

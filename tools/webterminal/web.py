@@ -9,23 +9,17 @@ import ssl
 import subprocess
 
 import signal
-import threading
-import threading
-import functools
-from openpilot.common.realtime import Ratekeeper
 
 import wave
-from aiohttp import web
-from aiohttp import ClientSession , ClientTimeout
+from aiohttp import web, ClientSession , ClientTimeout
 import time
 from typing import Literal, Dict, Optional, Tuple
 from openpilot.common.basedir import BASEDIR
 from openpilot.system.webrtc.webrtcd import StreamRequestBody
 from openpilot.common.params import Params
 
-from openpilot.tools.webterminal.udp_bridge import UdpJoyTelemetryBridge
-from openpilot.tools.webterminal.remote_control_mux import RemoteControlMux
-from openpilot.tools.webterminal.web_client_handler import ClientRegistry, ClientLease
+from openpilot.tools.webterminal.remote_control_controller import RemoteControlController
+from openpilot.tools.webterminal.remote_control_mux import JoystickCommands
 
 logger = logging.getLogger("webterminal")
 logging.basicConfig(level=logging.INFO)
@@ -34,7 +28,8 @@ WEBTERMINALDIR = f"{BASEDIR}/tools/webterminal"
 WEBRTCD_HOST = "localhost"
 WEBRTCD_PORT = 5001
 
-SITE_PORT = 80
+WEB_HOST = "0.0.0.0"
+WEB_PORT = 80
 
 UDP_LISTEN_PORT = 14550
 UDP_TELEMETRY_POPRT = 14551
@@ -44,20 +39,10 @@ CameraName = Literal["road", "wideRoad", "driver"]
 # текущая камера по умолчанию
 CAMERA_SELECT = "wideRoad"  #"driver", "wideRoad", "road"
 
-
-registry = ClientRegistry(timeout_ms=1200)
-# этот флаг ты дальше используешь в mux логике
-web_control_connected: bool = False
-any_control_connected: bool = False
+remote_controller = None
 
 def now_ns() -> int:
   return time.monotonic_ns()
-
-def rk_loop(function, hz, exit_event: threading.Event):
-  rk = Ratekeeper(hz, None)
-  while not exit_event.is_set():
-    function()
-    rk.keep_time()
 
 ## SSL
 def create_ssl_cert(cert_path: str, key_path: str):
@@ -87,23 +72,12 @@ def create_ssl_context():
 def on_control_mode_change(enabled: bool):
   Params().put_bool("JoystickDebugMode", enabled)
 
-async def update_debug_flag(is_connected: bool):
-  global any_control_connected
-  if any_control_connected != is_connected:
-    any_control_connected = is_connected
-    current_control_source = registry.get_current_control_source()
-    if current_control_source is not None:
-      source_name = current_control_source.kind
-    else:
-      source_name = "none"
-    logger.info(f"Any control connected: {any_control_connected}. Current source: {source_name}")
-    on_control_mode_change(any_control_connected)
 
 ## ENDPOINTS
 # async def ping(request: 'web.Request'):
 #   return web.Response(text="pong")
 async def ping(request: 'web.Request') -> web.Response:
-  global web_control_connected
+  global remote_controller
 
   # принимать client_id и через header, и через query/body
   client_id = request.headers.get("X-Client-ID") or request.query.get("client_id") or "unknown"
@@ -112,22 +86,54 @@ async def ping(request: 'web.Request') -> web.Response:
   # кто пришёл
   peer = request.transport.get_extra_info("peername")
   ip = peer[0] if isinstance(peer, tuple) and len(peer) > 0 else "unknown"
-  ua = request.headers.get("User-Agent", "")
-  kind = "web" #  request.headers.get("X-Client-Kind", request.query.get("kind", "unknown"))
-  want_master = (request.headers.get("X-Want-Master", "0") == "1") or (request.query.get("master", "0") == "1")
 
-  lease = registry.touch(client_id=client_id, ip=ip, user_agent=ua, kind=str(kind), want_master=bool(want_master))
+  if remote_controller.on_web_msg(msg=None, client_id=client_id, ip=ip):
+    is_master = True
+  else:
+    is_master = False
 
-  update_debug_flag(True)
-  # обновляем флаг
-  web_control_connected = registry.has_live_master()
   return web.json_response({
     "ok": True,
     "pong": True,
-    "client_id": lease.client_id,
-    "is_master": lease.is_master,
-    "web_control_connected": web_control_connected,
+    "client_id": client_id,
+    "is_master": is_master
   })
+
+async def ctrl(request: 'web.Request'):
+  global remote_controller
+  try:
+    json_msg = await request.json()
+    if "steering_angle_deg" not in json_msg or "brake_and_accel" not in json_msg or "control_enabled" not in json_msg:
+      return web.json_response({"ok": False, "error": f"missing steering_angle_deg or brake_and_accel in request: {json_msg}"}, status=400)
+  except Exception as e:
+    return web.json_response({"ok": False, "error": f"/ctrl bad request: {e}; {request} "}, status=400)
+
+  msg: JoystickCommands = JoystickCommands(
+    seq=int(json_msg.get("seq", 0)),
+    steering_angle_deg=float(json_msg.get("steering_angle_deg", 0.0)),
+    brake_and_accel=float(json_msg.get("brake_and_accel", 0.0)),
+    control_enabled=bool(json_msg.get("control_enabled", False)),
+    cruise_manual_set=bool(json_msg.get("cruise_manual_set", False)),
+    ext_flags=[bool(x) for x in json_msg.get("ext_flags", [False, False, False, False])]
+  )
+
+  # принимать client_id и через header, и через query/body
+  client_id = request.headers.get("X-Client-ID") or request.query.get("client_id") or "unknown"
+  client_id = str(client_id).strip()[:128]
+  peer = request.transport.get_extra_info("peername")
+  ip = peer[0] if isinstance(peer, tuple) and len(peer) > 0 else "unknown"
+
+  if remote_controller.on_web_msg(msg=msg, client_id=client_id, ip=ip):
+    is_master = True
+  else:
+    is_master = False
+
+  answer = {
+    "type": "ctrl_ack",
+    "ok": True,
+    "is_master": is_master
+  }
+  return web.json_response(answer)
 
 async def index(request: 'web.Request'):
   with open(os.path.join(WEBTERMINALDIR, "static", "index.html")) as f:
@@ -135,19 +141,13 @@ async def index(request: 'web.Request'):
     return web.Response(content_type="text/html", text=content)
 
 async def status(request: web.Request) -> web.Response:
-  global web_control_connected, any_control_connected
-  snap = registry.snapshot()
-  web_control_connected = registry.has_live_master()
-  snap["web_control_connected"] = web_control_connected
-  snap["any_control_connected"] = any_control_connected
-  return web.json_response({"ok": True, **snap})
-
-def watchdog_loop():
-  while True:
-    registry.purge_dead()
-    is_connected = registry.has_live_master()
-    update_debug_flag(is_connected)
-    asyncio.sleep(0.1)
+  global remote_controller
+  snaps: Dict[str, SnapshotInfo] = remote_controller.snapshots()
+  snaps['cameras'] = {
+    "default": CAMERA_SELECT,
+    "available": ["road", "wideRoad", "driver"]
+  }
+  return web.json_response({"ok": True, **snaps})
 
 
 async def offer(request: 'web.Request'):
@@ -167,24 +167,12 @@ async def offer(request: 'web.Request'):
     camera_name = CAMERA_SELECT
 
   pub_chanals = params.get("pub_chanals", [])
-  if not isinstance(pub_chanals, list):
-    pub_chanals = []
-  else:
-    for pub_chanal in pub_chanals:
-      if not isinstance(pub_chanal, str):
-        logger.warning(f"bad pub_chanal type: {pub_chanal} ({type(pub_chanal)}). Removing it.")
-        pub_chanals.remove(pub_chanal)
-
   sub_chanals = params.get("sub_chanals", [])
-  if not isinstance(sub_chanals, list) or len(sub_chanals) == 0:
+  pub_chanals = [x for x in pub_chanals if isinstance(x, str)]
+  sub_chanals = [x for x in sub_chanals if isinstance(x, str)]
+
+  if len(sub_chanals) == 0:
     sub_chanals = ["carState"]
-  else:
-    for sub_chanal in sub_chanals:
-      if not isinstance(sub_chanal, str):
-        logger.warning(f"bad sub_chanal type: {sub_chanal} ({type(sub_chanal)}). Removing it.")
-        sub_chanals.remove(sub_chanal)
-    if len(sub_chanals) == 0:
-      sub_chanals = ["carState"]
 
   body = StreamRequestBody(params["sdp"], [camera_name], pub_chanals, sub_chanals)  #["testJoystick"] ["carState"]
   body_json = dataclasses.asdict(body)
@@ -226,78 +214,23 @@ async def offer(request: 'web.Request'):
 
   return web.json_response(answer)
 
-remote_mux = None
-udp_bridge_thread = None
-udp_bridge = None
-
-def on_udp_rx(request: 'web.Request') -> web.Response:
-
-  # принимать client_id и через header, и через query/body
-  client_id = request.headers.get("X-Client-ID") or request.query.get("client_id") or "unknown"
-  client_id = str(client_id).strip()[:128]
-
-  # кто пришёл
-  peer = request.transport.get_extra_info("peername")
-  ip = peer[0] if isinstance(peer, tuple) and len(peer) > 0 else "unknown"
-  ua = request.headers.get("User-Agent", "")
-  kind = "udp"
-  want_master = (request.headers.get("X-Want-Master", "0") == "1") or (request.query.get("master", "0") == "1")
-
-  lease = registry.touch(client_id=client_id, ip=ip, user_agent=ua, kind=str(kind), want_master=bool(want_master))
-
-  update_debug_flag(True)
-  # обновляем флаг
-  web_control_connected = registry.has_live_master()
-  return web.json_response({
-    "ok": True,
-    "pong": True,
-    "client_id": lease.client_id,
-    "is_master": lease.is_master,
-    "web_control_connected": web_control_connected,
-  })
-
-async def udp_bridge_process():
-  global remote_mux, udp_bridge
-  await udp_bridge.start()
-  remote_mux = RemoteControlMux(
-    udp_timeout_ms=400,
-    web_timeout_ms=800,
-    on_control_mode_change_p=on_control_mode_change
-  )
-
-  telemetry_peer: Tuple[str, int] = ("192.168.1.255", 14551)
-  udp_bridge = UdpJoyTelemetryBridge(
-    listen_host="0.0.0.0",
-    listen_port=14550,
-    publisher_p=remote_mux.update_from_udp,
-    telemetry_peer=telemetry_peer,
-    use_last_sender_as_peer=True,
-    max_datagram_bytes: int = 2048,
-    logger: Optional[Any] = None
-  )
-
-
-  loop = asyncio.get_running_loop()
-  await loop.create_datagram_endpoint(lambda: udp_bridge, local_addr=(udp_bridge.listen_host, udp_bridge.listen_port))
-
-
-def udp_bridge_start():
-  global udp_bridge_thread
-  _exit_event = threading.Event()
-  udp_bridge_thread = threading.Thread(target=rk_loop,
-                                               args=(functools.partial(udp_bridge_process),
-                                                     10, _exit_event))
-  udp_bridge_thread.start()
-  # udp_bridge_thread = threading.Thread(target=udp_bridge_process, daemon=True)
-  # udp_bridge_thread.start()
 
 def main():
-  # Enable joystick debug mode
+  global remote_controller
+  # joystick debug mode for remote control mode
   Params().put_bool("JoystickDebugMode", False)  # True
-  # Params().put_bool("RemoteControlMode", True)  # True
-  global udp_bridge
-  udp_bridge = UdpJoyTelemetryBridge(listen_port=UDP_LISTEN_PORT)
-  udp_bridge_start()
+
+  remote_controller = RemoteControlController(
+    listen_host=WEB_HOST,
+    listen_port=UDP_LISTEN_PORT,
+    # target_host=None, # (WEB_HOST, UDP_TELEMETRY_POPRT)
+    send_port=UDP_TELEMETRY_POPRT,
+    # udp_publish_rate=UDP_PUBLISH_HZ,
+    # cereal_publish_rate=CEREAL_PUBLISH_HZ,
+    on_control_mode_change_p=on_control_mode_change,
+    logger=logger.error
+  )
+  remote_controller.start()
 
   # App needs to be HTTPS for microphone and audio autoplay to work on the browser
   ssl_context = create_ssl_context()
@@ -305,12 +238,11 @@ def main():
   app = web.Application()
   app.router.add_get("/", index)
   app.router.add_get("/ping", ping, allow_head=True)
+  app.router.add_get("/status", status)
   app.router.add_post("/offer", offer)
-  app.router.add_post("/status", status)
+  app.router.add_post("/ctrl", ctrl)
   app.router.add_static('/static', os.path.join(WEBTERMINALDIR, 'static'))
-  watchdog_thread = threading.Thread(target=watchdog_loop, daemon=True)
-  watchdog_thread.start()
-  web.run_app(app, access_log=None, host="0.0.0.0", port=SITE_PORT, ssl_context=ssl_context)
+  web.run_app(app, access_log=None, host=WEB_HOST, port=WEB_PORT, ssl_context=ssl_context)
 
 
 if __name__ == "__main__":

@@ -27,12 +27,8 @@ class MuxedJoystick:
   t_ns: int
   axes: List[float]
   buttons: List[bool]
-  enabled: bool
 
-  def is_valid(self) -> bool:
-    return bool(self.buttons[0]) if len(self.buttons) > 2 else False
-
-  def is_enabled(self) -> bool:
+  def enabled(self) -> bool:
     return bool(self.buttons[1]) if len(self.buttons) > 2 else False
 
 
@@ -45,22 +41,20 @@ class RemoteControlMux:
   ) -> None:
     self.debug_flag_en = False
     self.source_control = "none"
-    self.source_controled = False
+    self.source_controlled = False
     self.udp_timeout_ns = int(udp_timeout_ms * 1e6)
     self.web_timeout_ns = int(web_timeout_ms * 1e6)
 
     self._web_cmd = MuxedJoystick(
       t_ns=0,
       axes=[0.0, 0.0],
-      buttons=[False, False, False, False, False, False, False],
-      enabled=False
+      buttons=[False, False, False, False, False, False, False]
     )
 
     self._udp_cmd = MuxedJoystick(
       t_ns=0,
       axes=[0.0, 0.0],
-      buttons=[False, False, False, False, False, False, False],
-      enabled=False
+      buttons=[False, False, False, False, False, False, False]
     )
 
     # exported state
@@ -80,8 +74,7 @@ class RemoteControlMux:
         ext_flags[1],
         ext_flags[2],
         ext_flags[3]
-      ],
-      enabled=msg.control_enabled
+      ]
     )
     self._set_debug_flag_en(True)
 
@@ -99,8 +92,7 @@ class RemoteControlMux:
         ext_flags[1],
         ext_flags[2],
         ext_flags[3]
-      ],
-      enabled=msg.control_enabled
+      ]
     )
     self._set_debug_flag_en(True)
 
@@ -119,19 +111,19 @@ class RemoteControlMux:
     chosen_msg = None
 
     web_fresh = self._fresh(now, self._web_cmd.t_ns, self.web_timeout_ns)
-    if web_fresh and self._web_cmd.enabled:
+    if web_fresh and self._web_cmd.enabled():
       self.source_control = "web"
-      self.source_controled = True
+      self.source_controlled = True
       chosen_msg = self._web_cmd
     else:
       udp_fresh = self._fresh(now, self._udp_cmd.t_ns, self.udp_timeout_ns)
-      if udp_fresh and self._udp_cmd.enabled:
+      if udp_fresh and self._udp_cmd.enabled():
         self.source_control = "udp"
-        self.source_controled = True
+        self.source_controlled = True
         chosen_msg = self._udp_cmd
       else:
         self.source_control = "none"
-        self.source_controled = False
+        self.source_controlled = False
         if not web_fresh and not udp_fresh:
           self._set_debug_flag_en(False)
 

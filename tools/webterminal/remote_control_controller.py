@@ -1,101 +1,195 @@
 import asyncio
+import threading
 import time
 import cereal.messaging as messaging
+from typing import Optional, Tuple, List, Dict, Any, Callable
 
 from openpilot.tools.webterminal.udp_bridge import UdpJoyTelemetryBridge
-from openpilot.tools.webterminal.web_client_handler import ClientRegistry
-from openpilot.tools.webterminal.remote_control_mux import RemoteControlMux, JoystickCommands
+from openpilot.tools.webterminal.web_client_handler import ClientRegistry, SnapshotInfo, SnapshotClientInfo
+from openpilot.tools.webterminal.remote_control_mux import RemoteControlMux, JoystickCommands, MuxedJoystick
 
-PUBLISH_HZ = 50
+CEREAL_PUBLISH_HZ = 40  # 25 ms
+UDP_PUBLISH_HZ = 5  # 200ms
+
+
+GearShifterNames =[
+    "unknown",
+    "park",
+    "drive",
+    "neutral",
+    "reverse",
+    "sport",
+    "low",
+    "brake",
+    "eco",
+    "manumatic",
+    "undefined_10",
+    "undefined_11",
+    "undefined_12",
+    "undefined_13",
+    "undefined_14",
+    "undefined_15"
+  ]
+
+
 
 def monotonic_ns() -> int:
   return time.monotonic_ns()
 
-async def control_loop(listen_host="0.0.0.0", listen_port=14550, send_port=14551, logger=print):
-  # 1) Mux (если web тоже обновляет команды — дергай mux.update_from_web(...))
-  mux = RemoteControlMux(udp_timeout_ms=200, web_timeout_ms=500)
+class RemoteControlController:
 
-  webClientRegistry = ClientRegistry(
-    timeout_ms=800,
-    kind='web'
-  )
+  def __init__(self,
+               listen_host="0.0.0.0",
+               listen_port=14550,
+               target_host=None,
+               send_port=14551,
+               udp_publish_rate: int =UDP_PUBLISH_HZ,
+               cereal_publish_rate: int =CEREAL_PUBLISH_HZ,
+               on_control_mode_change_p: Optional[Callable[[bool], None]] = None,
+               logger=print
+               ) -> None:
+    self.webClientRegistry = ClientRegistry(timeout_ms=800, kind='web')
+    self.udpClientRegistry = ClientRegistry(timeout_ms=500, kind='udp')
 
-  # 2) UDP bridge (socket + protocol)
-  udp = UdpJoyTelemetryBridge(listen_host="0.0.0.0",
-                              listen_port=14550,
-                              send_port=14551,
-                              publisher_p=mux.update_from_udp,
-                              use_last_sender_as_peer=True,
-                              logger=logger
-                              )
+    # 1) Mux (если web тоже обновляет команды — дергай mux.update_from_web(...))
+    self.mux = RemoteControlMux(udp_timeout_ms=200, web_timeout_ms=500, on_control_mode_change_p = on_control_mode_change_p)
 
-  loop = asyncio.get_running_loop()
-  await loop.create_datagram_endpoint(lambda: udp, local_addr=("0.0.0.0", 14550))
+    self.logger = logger
 
-  # 3) cereal pub/sub
-  pm = messaging.PubMaster(["testJoystick"])
-  sm = messaging.SubMaster(["carState", "controlsState"], ignore_avg_freq=True)
+    if target_host is not None and target_host != "0.0.0.0" and target_host != "":
+      use_last_sender_as_peer = False
+      telemetry_peer: Tuple[str, int] = (target_host, send_port)
+    else:
+      use_last_sender_as_peer = True
+      telemetry_peer = None
 
-  period = 1.0 / PUBLISH_HZ
+    # 2) UDP bridge (socket + protocol)
+    self.udp = UdpJoyTelemetryBridge(
+      listen_host=listen_host,
+      listen_port=listen_port,
+      send_port=send_port,
+      publisher_p=self.on_udp_msg,
+      telemetry_peer=telemetry_peer,
+      use_last_sender_as_peer=use_last_sender_as_peer,
+      logger=logger
+    )
 
-  while True:
-    # --- пример: берём UDP joystick и кладём в mux.update_from_udp ---
-    # (в реальности ты парсишь udp.get_last_joy() и превращаешь в JoystickCommands)
-    pkt = udp.get_last_joy()
-    if pkt is not None:
-      axes = pkt.axes
-      buttons = pkt.buttons
-      # нормализация
-      steering = float(axes[0]) if len(axes) > 0 else 0.0
-      brake_accel = float(axes[1]) if len(axes) > 1 else 0.0
-      control_enabled = bool(buttons[1]) if len(buttons) > 1 else False
-      cruise = bool(buttons[2]) if len(buttons) > 2 else False
+    # 3) cereal pub/sub
+    self.pm = messaging.PubMaster(["testJoystick"])
+    self.sm = messaging.SubMaster(["carState", "controlsState"], ignore_avg_freq=True)
 
-      cmd = JoystickCommands(
-        steering_and_angle_deg=steering,
-        brake_and_accel=brake_accel,
-        control_enabled=control_enabled,
-        cruise_manual_activation=cruise,
-        reserve1=False, reserve2=False, reserve3=False, reserve4=False
-      )
-      mux.update_from_udp(cmd)
+    self.loop_period = 1.0 / float(cereal_publish_rate)
+    self.udp_publish_period_ns = int(1e9 / float(udp_publish_rate))
+    self.udp_publish_timestamp_ns = 0
 
-    # --- mux select ---
-    mj = mux.get()
+    self.last_mj = None
 
-    # --- publish to testJoystick ---
-    msg = messaging.new_message("testJoystick")
-    msg.testJoystick.axes = mj.axes
-    msg.testJoystick.buttons = mj.buttons
-    pm.send("testJoystick", msg)
+    self._thread = None
+    self._stop = threading.Event()
 
-    # --- telemetry out ---
-    sm.update(0)
-    if sm.updated.get("carState", False):
+
+  def _log(self, msg: str) -> None:
+    if self.logger:
+      self.logger(msg)
+
+  def on_udp_msg(self,  msg: Optional[JoystickCommands], client_id: str)-> bool:
+    # Only if message by master
+    if self.udpClientRegistry.touch(client_id=client_id, ip=client_id):
+      if msg is not None:
+        self.mux.update_from_udp(msg)
+      return True
+    return False
+
+  def on_web_msg(self,  msg: Optional[JoystickCommands], client_id: str, ip: str)-> bool:
+    if self.webClientRegistry.touch(client_id=client_id, ip=ip):
+      if msg is not None:
+        self.mux.update_from_web(msg)
+      return True
+    return False
+
+  def start(self) -> None:
+    self._thread = threading.Thread(target=lambda: asyncio.run(self.run()), daemon=True)
+    self._thread.start()
+
+  def stop(self) -> None:
+    self._stop.set()
+    if self._thread is not None:
+      self._thread.join(timeout=2.0)
+      self._thread = None
+
+  async def run(self) -> None:
+    # Start UDP socket
+    await self.udp.start()
+
+    try:
+      while not self._stop.is_set():
+        # --- mux select ---
+        mj: Optional[MuxedJoystick] = self.mux.get()
+
+        if mj is not None:
+          # --- publish to testJoystick ---
+          msg = messaging.new_message("testJoystick")
+          msg.testJoystick.axes = mj.axes
+          msg.testJoystick.buttons = mj.buttons
+          self.pm.send("testJoystick", msg)
+          self.last_mj = msg
+        elif self.last_mj is not None:
+          # --- republish last ---
+          msg = messaging.new_message("testJoystick")
+          msg.testJoystick.axes = [0.0, 0.0]
+          msg.testJoystick.buttons = [False, False, False, False, False, False, False]
+          self.pm.send("testJoystick", msg)
+          self.last_mj = None
+
+        now_ns = monotonic_ns()
+
+        if (now_ns - self.udp_publish_timestamp_ns) >= self.udp_publish_period_ns:
+          self.udp_publish_timestamp_ns = now_ns
+
+          # --- purge dead clients and check if any alive---
+          if self.udpClientRegistry.has_live_master() or self.webClientRegistry.has_live_master():
+            # --- collect and send telemetry ---
+            telemetry = self.collect_telemetry(now_ns)
+            if telemetry  is not None:
+              self.udp.send_telemetry(telemetry)
+
+        await asyncio.sleep(self.loop_period)
+
+    except Exception as e:
+      self._log(f"run() exception: {e}")
+      await asyncio.sleep(self.loop_period * 4)
+
+  def collect_telemetry(self, now_ns: int)-> Optional[Dict]:
+      # --- telemetry out ---
+      self.sm.update(0)
+      if not self.sm.updated.get("carState", False):
+        return None
+
       # Remote control state for debud use 'controlsState'
-      ctrl_s  = sm["controlsState"]
-      cs = sm["carState"]
+      ctrl_s = self.sm["controlsState"]
+      cs = self.sm["carState"]
 
-      udp.send_telemetry({
+      telemetry: Dict[str, Any]= {
         "type": "telemetry",
-        "t_ns": monotonic_ns(),
-        "vEgo": float(cs.vEgo), # best estimate of speed
+        "t_ns": now_ns,
+        "vEgo": float(cs.vEgo),  # best estimate of speed
 
         "steeringAngleDeg": float(cs.steeringAngleDeg),
-        "steering_drv_torque": float(cs.steeringTorque), # Native CAN units - check for driver applied torque
+        "steering_drv_torque": float(cs.steeringTorque),  # Native CAN units - check for driver applied torque
         "steering_flags": {
-          "pressed": bool(cs.steeringPressed), # is the user overring the steering wheel?
-          "disengage": bool(cs.steeringDisengage), # more force than steeringPressed, disengages for applicable brands
-          "fault_temp": bool(cs.steerFaultTemporary), # temporary fault in steering
-          "fault_perm": bool(cs.steerFaultPermanent) # permanent fault in steering
+          "pressed": bool(cs.steeringPressed),  # is the user overring the steering wheel?
+          "disengage": bool(cs.steeringDisengage),
+          # more force than steeringPressed, disengages for applicable brands
+          "fault_temp": bool(cs.steerFaultTemporary),  # temporary fault in steering
+          "fault_perm": bool(cs.steerFaultPermanent)  # permanent fault in steering
         },
-        "drv_accel": float(cs.vEgo),
         "drv_brake": float(cs.brake),  # this is user pedal only
-        "standstill": bool(cs.standstill), # is vehicle standstill
-        "gasPressed": bool(cs.gasPressed), # this is user pedal only
-        "brakePressed": bool(cs.brakePressed), # this is user pedal only
+        "standstill": bool(cs.standstill),  # is vehicle standstill
+        "gasPressed": bool(cs.gasPressed),  # this is user pedal only
+        "brakePressed": bool(cs.brakePressed),  # this is user pedal only
         "brakeHoldActive": bool(cs.brakeHoldActive),
         "parkingBrake": bool(cs.parkingBrake),
+        "gear": str(GearShifterNames[cs.gearShifter]) if 0 <= cs.gearShifter < len(GearShifterNames) else "invalid",
 
         "cruiseState": {
           "speed": float(cs.cruiseState.speed),
@@ -112,12 +206,12 @@ async def control_loop(listen_host="0.0.0.0", listen_port=14550, send_port=14551
         "fuelGauge": float(cs.fuelGauge),  # battery or fuel tank level from [0.0, 1.0]
         "charging": bool(cs.charging),  # is EV currently charging
 
-        "espDisabled": bool(cs.espDisabled), # is ESP currently disabled
-        "accFaulted": bool(cs.accFaulted), # is ACC faulted
-        "carFaultedNonCritical": bool(cs.carFaultedNonCritical), # some ECU is faulted, but car remains controllable
-        "espActive": bool(cs.espActive), # is ESP currently active
-        "vehicleSensorsInvalid": bool(cs.vehicleSensorsInvalid), # invalid steering angle readings, etc.
-        "lowSpeedAlert": bool(cs.lowSpeedAlert), # lost steering control due to a dynamic min steering speed
+        "espDisabled": bool(cs.espDisabled),  # is ESP currently disabled
+        "accFaulted": bool(cs.accFaulted),  # is ACC faulted
+        "carFaultedNonCritical": bool(cs.carFaultedNonCritical),  # some ECU is faulted, but car remains controllable
+        "espActive": bool(cs.espActive),  # is ESP currently active
+        "vehicleSensorsInvalid": bool(cs.vehicleSensorsInvalid),  # invalid steering angle readings, etc.
+        "lowSpeedAlert": bool(cs.lowSpeedAlert),  # lost steering control due to a dynamic min steering speed
         "blockPcmEnable": bool(cs.blockPcmEnable),  # whether to allow PCM to enable this frame
 
         # "aEgo": float(cs.aEgo),  # best estimate of aCAN cceleration
@@ -142,22 +236,39 @@ async def control_loop(listen_host="0.0.0.0", listen_port=14550, send_port=14551
         # leftBlindspot @ 33: Bool;  # Is there something blocking the left lane change
         # rightBlindspot @ 34: Bool;  # Is there something blocking the right lane change
 
+        "ctrl_state_steerAngleDeg": float(ctrl_s.actuators.steeringAngleDeg),
+        "ctrl_state_accel": float(ctrl_s.actuators.accel),  # m/s^2
+        "ctrl_state_gas": float(ctrl_s.actuators.gas),  # [0.0, 1.0]
+        "ctrl_state_brake": float(ctrl_s.actuators.brake),  # [0.0, 1.0]
+        "ctrl_state_torque": float(ctrl_s.actuators.torque),  # [0.0, 1.0]
+        "ctrl_state_torqueOutputCan": float(ctrl_s.actuators.torqueOutputCan),  # value sent over can to the car
+        "ctrl_state_speed": float(ctrl_s.actuators.speed),  # m/s
 
-        "rc_state_enabled": ctrl_s.enabledDEPRECATED,
-        "rc_state_active": ctrl_s.activeDEPRECATED,
-        "ctrl_state_steerAngleDeg": ctrl_s.actuators.steeringAngleDeg,
-        "ctrl_state_accel": ctrl_s.actuators.accel,  # m/s^2
-        "ctrl_state_gas": ctrl_s.actuators.gas, # [0.0, 1.0]
-        "ctrl_state_brake": ctrl_s.actuators.brake, # [0.0, 1.0]
-        "ctrl_state_torque": ctrl_s.actuators.torque, # [0.0, 1.0]
-        "ctrl_state_torqueOutputCan": ctrl_s.actuators.torqueOutputCan,# value sent over can to the car
-        "ctrl_state_speed": ctrl_s.actuators.speed, # m/s
+        "rc_state_enabled": bool(ctrl_s.enabledDEPRECATED),
+        "rc_state_active": bool(ctrl_s.activeDEPRECATED),
+        "rc_src": str(self.mux.source_control),  # remote control "udp" | "web" | "none"
+        "rc_enabled": bool(self.mux.source_controled),  # is remote control currently enabled
+      }
+      return telemetry
 
-        "src": mux.source_control,
-        "enabled": bool(mux.source_controled),
-      })
+  def snapshots(self) -> Dict[str, SnapshotInfo]:
+    web_sp: SnapshotInfo = self.webClientRegistry.snapshot()
+    udp_sp: SnapshotInfo = self.udpClientRegistry.snapshot()
 
-    await asyncio.sleep(period)
+    return {
+      "web": web_sp,
+      "udp": udp_sp}
+
+async def main() -> None:
+  controller = RemoteControlController()
+  try:
+    await controller.run()
+  except asyncio.CancelledError:
+    pass
+
 
 if __name__ == "__main__":
-  asyncio.run(control_loop())
+  try:
+    asyncio.run(main())
+  except KeyboardInterrupt:
+    pass

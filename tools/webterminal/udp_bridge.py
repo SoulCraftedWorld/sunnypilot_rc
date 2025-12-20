@@ -10,20 +10,9 @@ from typing import Optional, Tuple, List, Dict, Any, Callable
 
 from openpilot.tools.webterminal.remote_control_mux import JoystickCommands
 
-
-
-
 def monotonic_ns() -> int:
   return time.monotonic_ns()
 
-
-@dataclass
-class JoyPacket:
-  t_rx_ns: int
-  seq: int
-  axes: List[float]
-  buttons: List[bool]
-  src: Tuple[str, int]
 
 
 class UdpJoyTelemetryBridge(asyncio.DatagramProtocol):
@@ -38,12 +27,13 @@ class UdpJoyTelemetryBridge(asyncio.DatagramProtocol):
       listen_host: str = "0.0.0.0",
       listen_port: int = 14550,
       send_port: int = 14551,
-      publisher_p: Optional[Callable[[JoystickCommands], None]] = None,
+      publisher_p: Optional[Callable[[Optional[JoystickCommands], str], bool]] = None,
       telemetry_peer: Optional[Tuple[str, int]] = None,
       use_last_sender_as_peer: bool = True,
       max_datagram_bytes: int = 2048,
       logger: Optional[Any] = None
   ) -> None:
+
     self.listen_host = listen_host
     self.listen_port = listen_port
     self.send_port = send_port
@@ -52,10 +42,12 @@ class UdpJoyTelemetryBridge(asyncio.DatagramProtocol):
     self.max_datagram_bytes = max_datagram_bytes
 
     self._transport: Optional[asyncio.DatagramTransport] = None
-    self._last_joy: Optional[JoyPacket] = None
+    self._last_joy: Optional[JoystickCommands] = None
     self._last_sender: Optional[Tuple[str, int]] = None
+    self._master_sender_adr: Optional[Tuple[str, int]] = None
     self._logger = logger
     self.publisher_p = publisher_p
+    self.connection_counter = 0
 
   def _log(self, msg: str) -> None:
     if self._logger is not None:
@@ -64,6 +56,7 @@ class UdpJoyTelemetryBridge(asyncio.DatagramProtocol):
   # asyncio.DatagramProtocol
   def connection_made(self, transport: asyncio.BaseTransport) -> None:
     self._transport = transport  # type: ignore[assignment]
+    self.connection_counter += 1
 
   def datagram_received(self, data: bytes, addr: Tuple[str, int]) -> None:
     """
@@ -78,10 +71,17 @@ class UdpJoyTelemetryBridge(asyncio.DatagramProtocol):
     }
     """
     if len(data) > self.max_datagram_bytes:
+      self._log(f"UdpJoyTelemetryBridge: datagram from {addr} exceeds max size")
       return
 
     try:
       payload = json.loads(data.decode("utf-8", errors="strict"))
+      if "ping" in payload:
+        # ignore ping messages
+        if self.publisher_p is not None:
+          client_id = self._last_sender[0] if self._last_sender is not None else f"{self.connection_counter}"
+          self.publisher_p(None, client_id)  # keep alive ping
+        return
       ext_flags = payload.get("ext_flags", [False, False, False, False])
 
       joystick = JoystickCommands(
@@ -100,7 +100,9 @@ class UdpJoyTelemetryBridge(asyncio.DatagramProtocol):
     if self._last_joy is None or joystick.seq > self._last_joy.seq:
       self._last_joy = joystick
       if self.publisher_p is not None:
-        self.publisher_p(joystick)
+        client_id = self._last_sender[0] if self._last_sender is not None else f"{self.connection_counter}"
+        if self.publisher_p(joystick, client_id): # is master
+          self._master_sender_adr = addr
 
     # ignore out-of-order packets
 
@@ -109,6 +111,7 @@ class UdpJoyTelemetryBridge(asyncio.DatagramProtocol):
 
   def error_received(self, exc: Exception) -> None:
     # deliberately ignore to avoid log spam
+    self._log(f"[UDP] Rx Error {exc} ")
     pass
 
   def connection_lost(self, exc: Optional[Exception]) -> None:
@@ -121,15 +124,22 @@ class UdpJoyTelemetryBridge(asyncio.DatagramProtocol):
       local_addr=(self.listen_host, self.listen_port),
     )
 
-  def get_last_joy(self) -> Optional[JoyPacket]:
+  def get_last_joy(self) -> Optional[JoystickCommands]:
     return self._last_joy
 
   def _get_telemetry_peer(self) -> Optional[Tuple[str, int]]:
     if self.telemetry_peer is not None:
       return self.telemetry_peer
-    if self.use_last_sender_as_peer and self._last_sender is not None:
-      pear: Tuple[str, int] = (self._last_sender[0], self.send_port)
-      return pear
+
+    if self.use_last_sender_as_peer
+      if self._master_sender_adr is not None:
+        pear: Tuple[str, int] = (self._master_sender_adr[0], self.send_port)
+        return pear
+
+      if self._last_sender is not None:
+        pear: Tuple[str, int] = (self._last_sender[0], self.send_port)
+        return pear
+
     return None
 
   def send_telemetry(self, msg: Dict[str, Any]) -> None:
