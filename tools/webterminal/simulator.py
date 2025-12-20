@@ -9,7 +9,6 @@ import argparse
 import json
 import socket
 import struct
-import threading
 import time
 from typing import List, Tuple
 
@@ -17,8 +16,6 @@ from cereal import log
 from openpilot.common.swaglog import cloudlog
 
 import signal
-import threading
-import functools
 import numpy as np
 
 from collections import namedtuple
@@ -26,6 +23,8 @@ from enum import Enum
 from multiprocessing import Process, Queue, Value
 from abc import ABC, abstractmethod
 
+import threading
+import functools
 from openpilot.common.realtime import Ratekeeper
 from openpilot.tools.webterminal.sim_car import SimVwCar, SimState, CruiseButtons, vec3
 
