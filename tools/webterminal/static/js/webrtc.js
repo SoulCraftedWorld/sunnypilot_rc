@@ -6,6 +6,12 @@ export let controlCommandInterval = null;
 export let latencyInterval = null;
 export let lastChannelMessageTime = null;
 
+let directCtrlSendInterval = null;
+let tryToRtcmInterval = null;
+let tryToRtcmCount = 4;
+let tryToRtcmState = "init";
+const USE_DIRECT_CTRL_OVER_HTTP = true;
+
 export function onWindowResize(){
         onWindowResizeNext();
 }
@@ -29,6 +35,67 @@ export async function sendCtrl(cmd) {
   return await resp.json(); // если сервер что-то возвращает
 }
 
+function sendJoystickDirectCtrl() {
+    const {steer_deg, accel_brake, isJoystickActive ,isJoystickCruise} = getJoystickXY();
+    // let buttons = [true, false, isJoystickActive, isJoystickCruise, false, false, false, false];
+    // var message = JSON.stringify({type: "testJoystick", data: {axes: [steer_deg, accel_brake], buttons: buttons}})
+    // dc.send(message);
+    var message = JSON.stringify({type: "web_control",
+        data: {
+          seq: Date.now(),
+          steering_angle_deg: steer_deg,
+          brake_and_accel: accel_brake,
+          control_enabled: isJoystickActive,
+          cruise_manual_set: isJoystickCruise,
+          ext_flags: [false, false, false, false]
+        }})
+      try{
+        const result = sendCtrl(message);
+        if (result.ok ){
+            if ("is_master" in result){
+                const isMaster = result["is_master"];
+                const source_control = result["source_control"]? source_control in result: "NaN";
+                if (isMaster){
+                    if (source_control === "web") {
+                        $("#ctrl_state").fontColor = "rgb(100,204,100)";
+                        $("#ctrl_state").text("WEB");
+                    }else if (source_control === "udp") {
+                        $("#ctrl_state").fontColor = "rgb(43,85,152)";
+                        $("#ctrl_state").text("UDP");
+                    }else if (source_control === "none") {
+                        $("#ctrl_state").fontColor = "rgba(248,248,245,0.87)";
+                        $("#ctrl_state").text("OFF");
+                    }else {
+                         $("#ctrl_state").fontColor = "rgba(255,217,0,0.87)";
+                        $("#ctrl_state").text(source_control);
+                    }
+                } else {
+                    if (source_control === "web") {
+                        $("#ctrl_state").fontColor = "rgb(200,0,255)";
+                        $("#ctrl_state").text("web?");
+                    }else if (source_control === "udp") {
+                        $("#ctrl_state").fontColor = "rgb(43,47,152)";
+                        $("#ctrl_state").text("UDP?");
+                    }else if (source_control === "none") {
+                        $("#ctrl_state").fontColor = "rgba(248,248,245,0.87)";
+                        $("#ctrl_state").text("OFF?");
+                    }else {
+                         $("#ctrl_state").fontColor = "rgba(255,217,0,0.87)";
+                        $("#ctrl_state").text(source_control+"?");
+                    }
+                }
+            } else {
+                $("#ctrl_state").fontColor =  "rgba(255,111,0,0.9)";
+                $("#ctrl_state").text("N/A");
+            }
+        }else {
+            $("#ctrl_state").fontColor = "rgba(255,0,0,0.88)";
+            $("#ctrl_state").text("ERR");
+        }
+      }  catch (e) {
+        console.error('sendJoystick failed:', e);
+      }
+}
 
 export async function offerRtcRequest(sdp, type) {
   const res = await fetch('/offer', {
@@ -138,6 +205,7 @@ export function negotiate(pc) {
   }).then(function(answer) {
     return pc.setRemoteDescription(answer);
   }).catch(function(e) {
+
     alert(e);
   });
 }
@@ -162,68 +230,16 @@ export function start(pc, dc) {
      if (latencyInterval!==null){
         clearInterval(latencyInterval);
      }
+     if (directCtrlSendInterval!==null){
+        clearInterval(directCtrlSendInterval);
+     }
   };
 
   function sendJoystickOverDataChannel() {
     const {steer_deg, accel_brake, isJoystickActive ,isJoystickCruise} = getJoystickXY();
-    // let buttons = [true, false, isJoystickActive, isJoystickCruise, false, false, false, false];
-    // var message = JSON.stringify({type: "testJoystick", data: {axes: [steer_deg, accel_brake], buttons: buttons}})
-    // dc.send(message);
-    var message = JSON.stringify({type: "web_control",
-        data: {
-          seq: Date.now(),
-          steering_angle_deg: steer_deg,
-          brake_and_accel: accel_brake,
-          control_enabled: isJoystickActive,
-          cruise_manual_set: isJoystickCruise,
-          ext_flags: [false, false, false, false]
-        }})
-      try{
-        const result = sendCtrl(message);
-        if (result.ok ){
-            if ("is_master" in result){
-                const isMaster = result["is_master"];
-                const source_control = result["source_control"]? source_control in result: "NaN";
-                if (isMaster){
-                    if (source_control === "web") {
-                        $("#ctrl_state").fontColor = "rgb(100,204,100)";
-                        $("#ctrl_state").text("WEB");
-                    }else if (source_control === "udp") {
-                        $("#ctrl_state").fontColor = "rgb(43,85,152)";
-                        $("#ctrl_state").text("UDP");
-                    }else if (source_control === "none") {
-                        $("#ctrl_state").fontColor = "rgba(248,248,245,0.87)";
-                        $("#ctrl_state").text("OFF");
-                    }else {
-                         $("#ctrl_state").fontColor = "rgba(255,217,0,0.87)";
-                        $("#ctrl_state").text(source_control);
-                    }
-                } else {
-                    if (source_control === "web") {
-                        $("#ctrl_state").fontColor = "rgb(200,0,255)";
-                        $("#ctrl_state").text("web?");
-                    }else if (source_control === "udp") {
-                        $("#ctrl_state").fontColor = "rgb(43,47,152)";
-                        $("#ctrl_state").text("UDP?");
-                    }else if (source_control === "none") {
-                        $("#ctrl_state").fontColor = "rgba(248,248,245,0.87)";
-                        $("#ctrl_state").text("OFF?");
-                    }else {
-                         $("#ctrl_state").fontColor = "rgba(255,217,0,0.87)";
-                        $("#ctrl_state").text(source_control+"?");
-                    }
-                }
-            } else {
-                $("#ctrl_state").fontColor =  "rgba(255,111,0,0.9)";
-                $("#ctrl_state").text("N/A");
-            }
-        }else {
-            $("#ctrl_state").fontColor = "rgba(255,0,0,0.88)";
-            $("#ctrl_state").text("ERR");
-        }
-      }  catch (e) {
-        console.error('sendJoystick failed:', e);
-      }
+    let buttons = [true, isJoystickActive, isJoystickCruise, false, false, false, false];
+    var message = JSON.stringify({type: "testJoystick", data: {axes: [steer_deg, accel_brake], buttons: buttons}})
+    dc.send(message);
   }
 
   function checkLatency() {
@@ -250,9 +266,14 @@ export function start(pc, dc) {
      if (latencyInterval!==null){
         clearInterval(latencyInterval);
      }
-    controlCommandInterval = setInterval(sendJoystickOverDataChannel, 50);
-    latencyInterval = setInterval(checkLatency, 1000);
-    sendJoystickOverDataChannel();
+     if (!USE_DIRECT_CTRL_OVER_HTTP){
+         controlCommandInterval = setInterval(sendJoystickOverDataChannel, 50);
+         sendJoystickOverDataChannel();
+         if (latencyInterval!==null){
+            clearInterval(latencyInterval);
+         }
+         latencyInterval = setInterval(checkLatency, 1000);
+     }
   };
 
   const textDecoder = new TextDecoder();
@@ -298,11 +319,46 @@ export function start(pc, dc) {
   };
 
 
-  negotiate(pc)
-    .catch(function (err) {
-      console.error('negotiate error:', err);
-      alert('Negotiation failed: ' + err);
-    });
+  if (USE_DIRECT_CTRL_OVER_HTTP){
+      if (latencyInterval!==null){
+            clearInterval(latencyInterval);
+      }
+      latencyInterval = setInterval(checkLatency, 1000);
+      if (directCtrlSendInterval!==null){
+            clearInterval(directCtrlSendInterval);
+      }
+      directCtrlSendInterval = setInterval(sendJoystickDirectCtrl, 50);
+      sendJoystickDirectCtrl();
+  }
+
+  function tryToRtcmSend(){
+      if (tryToRtcmCount > 0){
+          if (tryToRtcmState === "sending"){
+              return;
+          }
+          console.log("Trying to send RTCM via DataChannel, attempts left:", tryToRtcmCount);
+          tryToRtcmState = "sending";
+          negotiate(pc)
+                .catch(function (err) {
+                  console.error('negotiate error:', err);
+                  tryToRtcmState = "error";
+                  tryToRtcmCount -= 1;
+                  if (tryToRtcmCount <= 0){
+                      alert('Negotiation failed: ' + err);
+                  }
+                });
+
+      } else {
+          clearInterval(tryToRtcmInterval);
+          tryToRtcmInterval = null;
+      }
+  }
+
+  // Попытаться отправить RTCM запрос несколько раз
+  tryToRtcmCount = 4;
+  tryToRtcmInterval = setInterval(tryToRtcmSend, 2000);
+  tryToRtcmSend();
+
 
   return { pc, dc };
 }
