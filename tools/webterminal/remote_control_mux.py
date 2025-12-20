@@ -5,8 +5,6 @@ import time
 from dataclasses import dataclass
 from typing import List, Optional, Callable
 
-from .udp_bridge import UdpJoyTelemetryBridge, JoyPacket
-
 
 def monotonic_ns() -> int:
   return time.monotonic_ns()

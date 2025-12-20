@@ -131,7 +131,7 @@ class UdpJoyTelemetryBridge(asyncio.DatagramProtocol):
     if self.telemetry_peer is not None:
       return self.telemetry_peer
 
-    if self.use_last_sender_as_peer
+    if self.use_last_sender_as_peer:
       if self._master_sender_adr is not None:
         pear: Tuple[str, int] = (self._master_sender_adr[0], self.send_port)
         return pear
