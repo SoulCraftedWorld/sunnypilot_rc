@@ -4,12 +4,13 @@
 import "./joystick_buttons.js";
 import "./slider_controller.js";
 import "./steer_wheel.js";
-import "./controls.js";
 import "./webrtc.js";
 import {onWindowResize, start, lastChannelMessageTime} from "./webrtc.js";
 
 export var pc = null;
 export var dc = null;
+
+export const CLIENT_ID = new Date().getTime();
 
 let logsElement = null;
 

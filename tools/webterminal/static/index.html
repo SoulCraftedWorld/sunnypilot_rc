@@ -1,29 +1,35 @@
 <html>
-  <head>
+<head>
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
     <title>E-Golf Terminal</title>
     <link rel="stylesheet" href="/static/main.css">
     <link rel="stylesheet" href="/static/css/bootstrap.min.css"/>
-      <script src="/static/libs/jquery-3.6.0.min.js"></script>
+    <script src="/static/libs/jquery-3.6.0.min.js"></script>
     <link rel="stylesheet" href="/static/fonts/bootstrap-icons.css">
     <script src="/static/libs/bootstrap.min.js"></script>
     <script src="/static/libs/moment.min.js"></script>
 
-    <link rel="stylesheet" href="/static/css/style.css" />
-    <link rel="stylesheet" href="/static/css/slider.css" />
-    <link rel="stylesheet" href="/static/css/joystick.css" />
-    <link rel="stylesheet" href="/static/css/steer_wheel.css" />
-    <link rel="stylesheet" href="/static/css/video_controller.css" />
+    <link rel="stylesheet" href="/static/css/style.css"/>
+    <link rel="stylesheet" href="/static/css/slider.css"/>
+    <link rel="stylesheet" href="/static/css/joystick.css"/>
+    <link rel="stylesheet" href="/static/css/steer_wheel.css"/>
+    <link rel="stylesheet" href="/static/css/video_controller.css"/>
 
-      <style>
-        body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
         .loc_container {
             position: relative;
             display: flex;
             flex-direction: column;
             height: 100vh;
         }
+
         header {
             background: rgb(15 45 76 / 57%);
             color: #e6f4f1;
@@ -39,8 +45,11 @@
             align-self: center;
             display: flex;
         }
-        main {  display: flex;
-            height: 100%;}
+
+        main {
+            display: flex;
+            height: 100%;
+        }
 
         .info_container {
             background-color: transparent;
@@ -50,196 +59,209 @@
             border: 0.2vh solid rgba(187, 178, 178, 0.59);
         }
     </style>
-  </head>
-  <body class="no-select">
-    <div class="fullscreen-container" id="fullscreen-container-id">
-       <div class="loc_container">
-           <main>
-                <div id="fullscreen-button" data-tooltip="Полноэкранный режим."></div>
+</head>
+<body class="no-select">
+<div class="fullscreen-container" id="fullscreen-container-id">
+    <div class="loc_container">
+        <main>
+            <div id="fullscreen-button" style="background-color: rgb(244 244 244 / 50%);" data-tooltip="Полноэкранный режим."></div>
 
-                <div id="steer-wheel-joystick-container"> </div>
+            <div id="steer-wheel-joystick-container"></div>
 
-                <div id="joystick-container-right" class="joystick-container right" >
+            <div id="joystick-container-right" class="joystick-container right">
 
-                    <div id="joystick-button-space"  >
+                <div id="joystick-button-space">
 
-                        <div class="joystick-control-overlay">
-
-
-                            <div class="joystick-vertical-buttons">
-
-                                <div   class="joystick-horizontal-buttons frame"  id="throttle-stop-frame" >
+                    <div class="joystick-control-overlay">
 
 
-                                    <div class="slider-container track-vertical" id="slider-accel-brake-container-id">
-                                        <div id="joystick-value-throttle" class="slider-status track-vertical top"></div>
-                                        <div id="slider-accel-brake" class="slider track-vertical">
-                                            <div class="track-vertical slider-gradient brake"></div>
-                                            <div class="track-vertical slider-line center"></div>
-                                            <div class="track-vertical slider-gradient  accel"></div>
-                                            <div id="slider-accel-brake-knob" class="slider slider__knob track-vertical"></div>
-                                   </div>
+                        <div class="joystick-vertical-buttons">
+
+                            <div class="joystick-horizontal-buttons frame" id="throttle-stop-frame">
+
+
+                                <div class="slider-container track-vertical" id="slider-accel-brake-container-id">
+                                    <div id="joystick-value-throttle" class="slider-status track-vertical top"></div>
+                                    <div id="slider-accel-brake" class="slider track-vertical">
+                                        <div class="track-vertical slider-gradient brake"></div>
+                                        <div class="track-vertical slider-line center"></div>
+                                        <div class="track-vertical slider-gradient  accel"></div>
+                                        <div id="slider-accel-brake-knob"
+                                             class="slider slider__knob track-vertical"></div>
+                                    </div>
                                 </div>
-                                    <div  style="margin-left: 3vh; display: flex; flex-direction: column; align-items: center;">
-                                        <div   class="joystick-vertical-buttons" style="margin-top: 12.0vh;">
+                                <div style="margin-left: 3vh; display: flex; flex-direction: column; align-items: center;">
+                                    <div class="joystick-vertical-buttons" style="margin-top: 12.0vh;">
 
-                                            <button class="joystick-control-button"  id="stop-btn" style="margin-top: 10.0vh;"   >
-                                                <div class="joystick-control-button-image" id="stop-btn-image"> </div>
-                                            </button>
-                                            <div  class="vertical-slider-status" style="background-color:transparent; margin-top: -0.9vh;" >СТОП</div>
+                                        <button class="joystick-control-button" id="stop-btn"
+                                                style="margin-top: 10.0vh;">
+                                            <div class="joystick-control-button-image" id="stop-btn-image"></div>
+                                        </button>
+                                        <div class="vertical-slider-status"
+                                             style="background-color:transparent; margin-top: -0.9vh;">СТОП
                                         </div>
                                     </div>
+                                </div>
 
 
+                            </div>
+                        </div>
+
+                    </div>
+
+                </div>
+            </div>
+
+            <header>
+                <div class="line_container">
+
+                    <div class="icon-container" style="position: absolute; right: 0.7vw;">
+                        <div style="min-width: 11vh;">
+                            <div class="col-sm-12 col-md-6 details info_container"
+                                 style="align-items: center; gap: 1vh; width: 100%;height: 100%;">
+                                <p class="bi bi-speedometer small" style="padding-left: 4px; font-size: 2vh;"></p>
+                                <div class="icon-sub-sub-panel">
+                                    <i id="cruise" class="pre-blob1">АВТОПИЛОТ:OFF</i>
                                 </div>
                             </div>
-
                         </div>
-
-                    </div>
-                </div>
-
-               <header>
-                    <div class="line_container">
-
-                        <div class="icon-container" style="position: absolute; right: 0.7vw;">
-                                    <div style="min-width: 11vh;">
-                                        <div class="col-sm-12 col-md-6 details info_container" style="align-items: center; gap: 1vh; width: 100%;height: 100%;">
-                                             <p class="bi bi-controller small" style="padding-left: 4px; font-size: 2vh;" ></p>
-                                           <div class="icon-sub-sub-panel" >
-                                                    <i id="ctrl_state" class="pre-blob1">OFF</i>
-                                          </div>
-                                      </div>
-                                    </div>
-                                    <div style="min-width: 11vh;">
-                                        <div class="col-sm-12 col-md-6 details info_container" style="align-items: center; gap: 1vh; width: 100%;height: 100%;">
-                                             <p class="bi bi-speedometer small" style="padding-left: 4px; font-size: 2vh;" ></p>
-                                            <div class="icon-sub-sub-panel" >
-                                                    <i id="cruise" class="pre-blob1">CC:OFF</i>
-                                                </div>
-                                      </div>
-                                    </div>
-                                    <div style="min-width: 11vh;">
-                                        <div class="col-sm-12 col-md-6 details info_container" style="align-items: center; gap: 1vh; width: 100%;height: 100%;">
-                                             <p class="bi bi-speedometer2 small" style="padding-left: 4px; font-size: 2vh;" ></p>
-                                            <div class="icon-sub-sub-panel" >
-                                                    <i id="speed" class="pre-blob1">33 km/h</i>
-                                                </div>
-                                      </div>
-                                    </div>
-                                    <div style="min-width: 11vh;">
-                                        <div class="col-sm-12 col-md-6 details info_container" style="align-items: center; gap: 1vh; width: 100%;height: 100%;">
-                                             <p class="bi bi-arrow-down-up small" style="padding-left: 4px;  font-size: 2vh;" ></p>
-                                            <div class="icon-sub-sub-panel">
-                                                    <i id="ping-time" class="pre-blob1">44 мс</i>
-                                            </div>
-
-                                      </div>
-                                    </div>
-                                    <div style="min-width: 11vh;">
-                                        <div class="col-sm-12 col-md-6 details info_container" style="align-items: center; gap: 1vh; width: 100%;height: 100%;">
-                                            <p class="bi bi-battery-half small" style="padding-left: 4px;  font-size: 2vh;"></p>
-                                          <div class="icon-sub-sub-panel">
-                                            <i id="battery" class="pre-blob1">55%</i>
-                                          </div>
-
-                                     </div>
-                                    </div>
-
-                                <div id="video-buttons-box" class="video-buttons">
-                                    <button id="toggle-video-fullscreen"></button>
+                        <div style="min-width: 11vh;">
+                            <div class="col-sm-12 col-md-6 details info_container"
+                                 style="align-items: center; gap: 1vh; width: 100%;height: 100%;">
+                                <p class="bi bi-controller small" style="padding-left: 4px; font-size: 2vh;"></p>
+                                <div class="icon-sub-sub-panel">
+                                    <i id="ctrl_state" class="pre-blob1">OFF</i>
+                                </div>
+                            </div>
+                        </div>
+                        <div style="min-width: 11vh;">
+                            <div class="col-sm-12 col-md-6 details info_container"
+                                 style="align-items: center; gap: 1vh; width: 100%;height: 100%;">
+                                <p class="bi bi-speedometer2 small" style="padding-left: 4px; font-size: 2vh;"></p>
+                                <div class="icon-sub-sub-panel">
+                                    <i id="speed" class="pre-blob1">33 km/h</i>
+                                </div>
+                            </div>
+                        </div>
+                        <div style="min-width: 11vh;">
+                            <div class="col-sm-12 col-md-6 details info_container"
+                                 style="align-items: center; gap: 1vh; width: 100%;height: 100%;">
+                                <p class="bi bi-arrow-down-up small" style="padding-left: 4px;  font-size: 2vh;"></p>
+                                <div class="icon-sub-sub-panel">
+                                    <i id="ping-time" class="pre-blob1">44 мс</i>
                                 </div>
 
+                            </div>
+                        </div>
+                        <div style="min-width: 11vh;">
+                            <div class="col-sm-12 col-md-6 details info_container"
+                                 style="align-items: center; gap: 1vh; width: 100%;height: 100%;">
+                                <p class="bi bi-battery-half small" style="padding-left: 4px;  font-size: 2vh;"></p>
+                                <div class="icon-sub-sub-panel">
+                                    <i id="battery" class="pre-blob1">55%</i>
+                                </div>
+
+                            </div>
                         </div>
 
-                    </div>
-                </header>
-
-                <div class="content">
-
-                    <div id="video-container">
-                        <video id="video" class="video-stream" playsinline autoplay muted loop poster="/static/pic/poster.png"></video>
-                    </div>
-
-
-                    <div  class="controls" id="controls-panel-id">
-
-                        <div class="horizontal-items" style="display: flex; flex-direction: row; justify-content: center;">
-                            <button id="joystick-cruise-active-btn" class="control-button" >КРУИЗ</button>
-                            <button id="joystick-active-btn" class="control-button" >КОНТРОЛЬ</button>
-                            <button id="plotter-btn" class="control-button" >ГРАФИК</button>
-
-<!--                            <button type="button" id="start" class="btn btn-light btn-lg">Start</button>-->
-<!--                            <button type="button" id="stop" class="btn btn-light btn-lg">Stop</button>-->
-
+                        <div id="video-buttons-box" class="video-buttons">
+                            <button id="toggle-video-fullscreen"></button>
                         </div>
 
                     </div>
 
+                </div>
+            </header>
+
+            <div class="content">
+
+                <div id="video-container">
+                    <video id="video" class="video-stream" playsinline autoplay muted loop
+                           poster="/static/pic/poster.png"></video>
+                </div>
+
+
+                <div class="controls" id="controls-panel-id">
+
+                    <div class="horizontal-items" style="display: flex; flex-direction: row; justify-content: center;">
+                        <button id="joystick-active-btn" class="control-button">КОНТРОЛЬ</button>
+                        <button id="joystick-cruise-active-btn" class="control-button">АВТОПИЛОТ</button>
+                        <button id="plotter-btn" class="control-button">ТЕЛЕМЕТРИЯ</button>
+
+                        <!--                            <button type="button" id="start" class="btn btn-light btn-lg">Start</button>-->
+                        <!--                            <button type="button" id="stop" class="btn btn-light btn-lg">Stop</button>-->
+
+                    </div>
 
                 </div>
 
-               <div id="plotter-modal" class="hidden" >
-                <h3 style="margin-top: 0; margin-bottom: 0.6vh;">Графики</h3>
-                    <div class="panel_column" style="background: rgba(255,255,255,0.06);">
-                      <div class="col-6"><canvas id="chart-ping" ></canvas></div>
-                      <div class="col-6"><canvas id="chart-battery" ></canvas></div>
+
+            </div>
+
+            <div id="plotter-modal" class="hidden">
+                <h3 style="margin-top: 0; margin-bottom: 0.6vh;">Телеметрия</h3>
+                <div class="panel_column" style="background: rgba(255,255,255,0.06);">
+                    <div class="col-6">
+                        <canvas id="chart-ping"></canvas>
                     </div>
-               </div>
+                    <div class="col-6">
+                        <canvas id="chart-battery"></canvas>
+                    </div>
+                </div>
+            </div>
 
-<!--            <div id="icon-panel" class="row">-->
-
-
-<!--      <p class="jumbo2">E-Golf Terminal</p>-->
-<!--      <audio id="audio" autoplay="true"></audio>-->
-
-
-<!--          <div class="row" style="width: 100%; padding: 0px 10px 0px 10px;">-->
-<!--            <div id="wasd" class="col-md-12 row">-->
-<!--              <div class="col-md-6 col-sm-12" style="justify-content: center; display: flex; flex-direction: column;">-->
-<!--                <div class="wasd-row">-->
-<!--                  <div class="keys" id="key-w">W</div>-->
-<!--                  <div id="key-val"><span id="pos-vals">0,0</span><span>x,y</span></div>-->
-<!--                </div>-->
-<!--                <div class="wasd-row">-->
-<!--                  <div class="keys" id="key-a">A</div>-->
-<!--                  <div class="keys" id="key-s">S</div>-->
-<!--                  <div class="keys" id="key-d">D</div>-->
-<!--                </div>-->
-<!--              </div>-->
-<!--              <div class="col-md-6 col-sm-12 form-group plan-form">-->
-<!--                <label for="plan-text">Plan (w, a, s, d, t)</label>-->
-<!--                <label style="font-size: 15px;" for="plan-text">*Extremely Experimental*</label>-->
-<!--                <textarea class="form-control" id="plan-text" rows="7" placeholder="1,0,0,0,2"></textarea>-->
-<!--                <button type="button" id="plan-button" class="btn btn-light btn-lg">Execute</button>-->
-<!--              </div>-->
-<!--            </div>-->
-<!--          </div>-->
-
-<!--          <div class="row" style="padding: 0px 10px 0px 10px; width: 100%;">-->
-<!--            <div class="panel row">-->
-<!--              <div class="col-sm-3" style="text-align: center;">-->
-<!--                <p>Play Sounds</p>-->
-<!--              </div>-->
-<!--              <div class="btn-group col-sm-8">-->
-<!--                <button type="button" id="sound-engage" class="btn btn-outline-success btn-lg sound">Engage</button>-->
-<!--                <button type="button" id="sound-disengage" class="btn btn-outline-warning btn-lg sound">Disengage</button>-->
-<!--                <button type="button" id="sound-error" class="btn btn-outline-danger btn-lg sound">Error</button>-->
-<!--              </div>-->
-<!--            </div>-->
-<!--          </div>-->
+            <!--            <div id="icon-panel" class="row">-->
 
 
+            <!--      <p class="jumbo2">E-Golf Terminal</p>-->
+            <!--      <audio id="audio" autoplay="true"></audio>-->
 
-         </main>
-       </div>
+
+            <!--          <div class="row" style="width: 100%; padding: 0px 10px 0px 10px;">-->
+            <!--            <div id="wasd" class="col-md-12 row">-->
+            <!--              <div class="col-md-6 col-sm-12" style="justify-content: center; display: flex; flex-direction: column;">-->
+            <!--                <div class="wasd-row">-->
+            <!--                  <div class="keys" id="key-w">W</div>-->
+            <!--                  <div id="key-val"><span id="pos-vals">0,0</span><span>x,y</span></div>-->
+            <!--                </div>-->
+            <!--                <div class="wasd-row">-->
+            <!--                  <div class="keys" id="key-a">A</div>-->
+            <!--                  <div class="keys" id="key-s">S</div>-->
+            <!--                  <div class="keys" id="key-d">D</div>-->
+            <!--                </div>-->
+            <!--              </div>-->
+<!--                          <div class="col-md-6 col-sm-12 form-group plan-form">-->
+<!--                            <label for="plan-text">Plan (w, a, s, d, t)</label>-->
+<!--                            <label style="font-size: 15px;" for="plan-text">*Extremely Experimental*</label>-->
+<!--                            <textarea class="form-control" id="plan-text" rows="7" placeholder="1,0,0,0,2"></textarea>-->
+<!--                            <button type="button" id="plan-button" class="btn btn-light btn-lg">Execute</button>-->
+<!--                          </div>-->
+            <!--            </div>-->
+            <!--          </div>-->
+
+            <!--          <div class="row" style="padding: 0px 10px 0px 10px; width: 100%;">-->
+            <!--            <div class="panel row">-->
+            <!--              <div class="col-sm-3" style="text-align: center;">-->
+            <!--                <p>Play Sounds</p>-->
+            <!--              </div>-->
+            <!--              <div class="btn-group col-sm-8">-->
+            <!--                <button type="button" id="sound-engage" class="btn btn-outline-success btn-lg sound">Engage</button>-->
+            <!--                <button type="button" id="sound-disengage" class="btn btn-outline-warning btn-lg sound">Disengage</button>-->
+            <!--                <button type="button" id="sound-error" class="btn btn-outline-danger btn-lg sound">Error</button>-->
+            <!--              </div>-->
+            <!--            </div>-->
+            <!--          </div>-->
+
+
+        </main>
     </div>
-    </div>
-    <script src="/static/libs/chart.js"></script>
-    <script src="/static/libs/moment.js"></script>
-    <script src="/static/libs/chartjs-adapter-moment.min.js"></script>
+</div>
+</div>
+<script src="/static/libs/chart.js"></script>
+<script src="/static/libs/moment.js"></script>
+<script src="/static/libs/chartjs-adapter-moment.min.js"></script>
 
-    <script src="/static/js/jsmain.js" type="module"></script>
+<script src="/static/js/jsmain.js" type="module"></script>
 
-  </body>
+</body>
 </html>

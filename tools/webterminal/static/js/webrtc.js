@@ -1,29 +1,36 @@
-import { getXY } from "./controls.js";
 import { pingPoints, batteryPoints, chartPing, chartBattery } from "./plots.js";
 import {getJoystickXY, onWindowResizeNext, setSteerMaxRotationAngle, setSteerCurrent, setCruiseEnabledActive} from "./joystick_buttons.js";
+import {CLIENT_ID} from "./jsmain.js";
 
 export let controlCommandInterval = null;
 export let latencyInterval = null;
 export let lastChannelMessageTime = null;
 
+let pcConnectionState = ""; // connecting->connected->disconnected->failed
+let pcConnected = false;
+let pcConnectionLost = false;
+let pcConnectionLostTimeout = 0;
 let directCtrlSendInterval = null;
 let tryToRtcmInterval = null;
 let tryToRtcmCount = 4;
 let tryToRtcmState = "init";
 let sendJoystickInProgress = false;
 let sendCtrlCounter = 0;
-const USE_DIRECT_CTRL_OVER_HTTP = true;
+const ALIVE_WINDOW_MS = 3000;
+
+const CONTROL_TRANSPORT = "http"; // "http" | "dc"
 
 export function onWindowResize(){
         onWindowResizeNext();
 }
 
+
 async function sendCtrl(cmd) {
-  const resp = await fetch("/ctrl", {
+    const resp = await fetch("/ctrl", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "X-Client-ID": window.CLIENT_ID,
+      "X-Client-ID": CLIENT_ID,
       "X-Client-Kind": "web",
     },
     body: JSON.stringify(cmd),
@@ -55,42 +62,47 @@ async function sendJoystickDirectCtrl() {
         }
     };
     try {
-        const result = await sendCtrl(message);
-        sendCtrlCounter += 1;
-        if (sendCtrlCounter % 5 === 0) {
-            if (result.ok) {
+        const now = new Date().getTime();
+        if (!pcConnectionLost || ((now - pcConnectionLostTimeout ) < 600)){
+            const result = await sendCtrl(message);
+            sendCtrlCounter += 1;
+            if (sendCtrlCounter % 5 === 0) {
+                if (result.ok) {
 
 
-                if ("is_master" in result) {
-                    const isMaster = result["is_master"];
-                    const source_control = ("source_control" in result) ? result.source_control : "NaN";
-                    if (isMaster) {
-                        if (source_control === "web") {
-                            $("#ctrl_state").css("color", "rgb(100,204,100)").text("WEB");
-                        } else if (source_control === "udp") {
-                            $("#ctrl_state").css("color", "rgb(43,85,152)").text("UDP");
-                        } else if (source_control === "none") {
-                            $("#ctrl_state").css("color", "rgba(248,248,245,0.87)").text("OFF");
+                    if ("is_master" in result) {
+                        const isMaster = result["is_master"];
+                        const source_control = ("source_control" in result) ? result.source_control : "NaN";
+                        if (isMaster) {
+                            if (source_control === "web") {
+                                $("#ctrl_state").css("color", "rgb(100,204,100)").text("WEB");
+                            } else if (source_control === "udp") {
+                                $("#ctrl_state").css("color", "rgb(43,85,152)").text("UDP");
+                            } else if (source_control === "none") {
+                                $("#ctrl_state").css("color", "rgba(248,248,245,0.87)").text("OFF");
+                            } else {
+                                $("#ctrl_state").css("color", "rgba(255,217,0,0.87)").text(source_control);
+                            }
                         } else {
-                            $("#ctrl_state").css("color", "rgba(255,217,0,0.87)").text(source_control);
+                            if (source_control === "web") {
+                                $("#ctrl_state").css("color", "rgb(200,0,255)").text("EXT web??");
+                            } else if (source_control === "udp") {
+                                $("#ctrl_state").css("color", "rgb(43,47,152)").text("UDP??");
+                            } else if (source_control === "none") {
+                                $("#ctrl_state").css("color", "rgba(248,248,245,0.87)").text("OFF??");
+                            } else {
+                                $("#ctrl_state").css("color", "rgba(255,217,0,0.87)").text(source_control + "??");
+                            }
                         }
                     } else {
-                        if (source_control === "web") {
-                            $("#ctrl_state").css("color", "rgb(200,0,255)").text("EXT web??");
-                        } else if (source_control === "udp") {
-                            $("#ctrl_state").css("color", "rgb(43,47,152)").text("UDP??");
-                        } else if (source_control === "none") {
-                            $("#ctrl_state").css("color", "rgba(248,248,245,0.87)").text("OFF??");
-                        } else {
-                            $("#ctrl_state").css("color", "rgba(255,217,0,0.87)").text(source_control + "??");
-                        }
+                        $("#ctrl_state").css("color", "rgba(255,111,0,0.9)").text("N/A");
                     }
                 } else {
-                    $("#ctrl_state").css("color", "rgba(255,111,0,0.9)").text("N/A");
+                    $("#ctrl_state").css("color", "rgba(255,0,0,0.88)").text("ERR");
                 }
-            } else {
-                $("#ctrl_state").css("color", "rgba(255,0,0,0.88)").text("ERR");
             }
+        }else{
+            $("#ctrl_state").css("color", "rgba(236,27,27,0.88)").text("LOST");
         }
     } catch (e) {
         console.error('sendJoystick failed:', e);
@@ -101,7 +113,11 @@ async function sendJoystickDirectCtrl() {
 export async function offerRtcRequest(sdp, type) {
   const res = await fetch('/offer', {
     method: 'POST',
-    headers: {'Content-Type': 'application/json'},
+    headers: {
+        'Content-Type': 'application/json',
+        "X-Client-ID": CLIENT_ID,
+          "X-Client-Kind": "web",
+    },
     body: JSON.stringify({ sdp: sdp, type: type })
   });
   if (!res.ok) {
@@ -121,7 +137,12 @@ export async function offerRtcRequest(sdp, type) {
 
 export function pingHeadRequest() {
   return fetch('/', {
-    method: 'HEAD'
+    method: 'HEAD',
+    headers: {
+      "Content-Type": "application/json",
+      "X-Client-ID": CLIENT_ID,
+      "X-Client-Kind": "web",
+    },
   });
 }
 
@@ -137,6 +158,8 @@ export function createPeerConnection(pc) {
   videoEl.autoplay = true;
   videoEl.muted = true;
   videoEl.playsInline = true;
+  videoEl.addEventListener("stalled", () => console.log("VIDEO stalled"));
+  videoEl.addEventListener("pause", () => console.log("VIDEO paused"));
 
   pc.addEventListener('track', (evt) => {
       console.log("[VIDEO] Adding Tracks!", evt.track.kind, evt.streams);
@@ -176,6 +199,25 @@ export function createPeerConnection(pc) {
         console.log("[VIDEO] Received non-video track:", evt.track.kind);
       }
     });
+
+  pc.addEventListener("iceconnectionstatechange", () => {
+    console.log("ICE:", pc.iceConnectionState);
+  });
+  pc.addEventListener("connectionstatechange", () => {
+      console.log("PC:", pc.connectionState);
+      // connecting->connected->disconnected->failed
+      if (pc.connectionState === "connected"){
+           pcConnectionLost = false;
+          pcConnected = true;
+      }else if (pc.connectionState === "disconnected" || pc.connectionState === "failed"){
+          pcConnected = false;
+          if (pcConnectionState === "failed"){
+              pcConnectionLostTimeout = new Date().getTime();
+              pcConnectionLost = true;
+          }
+      }
+      pcConnectionState = pc.connectionState;
+  });
 
   return pc;
 }
@@ -238,6 +280,10 @@ export function start(pc, dc) {
      }
   };
 
+  dc.addEventListener("close", () => console.log("DC closed"));
+  dc.addEventListener("error", (e) => console.log("DC error", e));
+
+
   function sendJoystickOverDataChannel() {
     const {steer_deg, accel_brake, isJoystickActive ,isJoystickCruise} = getJoystickXY();
     let buttons = [true, isJoystickActive, isJoystickCruise, false, false, false, false];
@@ -249,14 +295,18 @@ export function start(pc, dc) {
     const initialTime = new Date().getTime();
     pingHeadRequest().then(function() {
       const currentTime = new Date().getTime();
-      if (Math.abs(currentTime - lastChannelMessageTime) < 1000) {
+      const age = lastChannelMessageTime ? (currentTime - lastChannelMessageTime) : Infinity;
+
+      if (Math.abs(age) < ALIVE_WINDOW_MS) {
         const pingtime = currentTime - initialTime;
         pingPoints.push({'x': currentTime, 'y': pingtime});
         if (pingPoints.length > 1000) {
           pingPoints.shift();
         }
         chartPing.update();
-        $("#ping-time").text((pingtime) + "ms");
+        $("#ping-time").css("color", "rgba(248,248,245,0.87)").text((pingtime) + "мс");
+      }else {
+        $("#ping-time").css("color", "rgba(234,66,66,0.87)").text( "н/д");
       }
     })
   }
@@ -269,7 +319,7 @@ export function start(pc, dc) {
      if (latencyInterval!==null){
         clearInterval(latencyInterval);
      }
-     if (USE_DIRECT_CTRL_OVER_HTTP){
+     if (CONTROL_TRANSPORT === "dc"){
          controlCommandInterval = setInterval(sendJoystickOverDataChannel, 50);
          sendJoystickOverDataChannel();
      }
@@ -302,14 +352,14 @@ export function start(pc, dc) {
         if (carStaterIndex % 200 == 0) {
             if (msg.data.cruiseState.available) {
                 if (msg.data.cruiseState.enabled) {
-                    $("#cruise").text('CC:ON');
+                    $("#cruise").text('АВТОПИЛОТ:ON');
                     setCruiseEnabledActive(true);
                 } else {
-                    $("#cruise").text("CC:OFF");
+                    $("#cruise").text("АВТОПИЛОТ:OFF");
                     setCruiseEnabledActive(false);
                 }
             } else {
-                $("#cruise").text("CC:NAN");
+                $("#cruise").text("АВТОПИЛОТ:NAN");
                 setCruiseEnabledActive(false);
             }
         }
@@ -322,7 +372,7 @@ export function start(pc, dc) {
   };
 
 
-  if (USE_DIRECT_CTRL_OVER_HTTP){
+  if (CONTROL_TRANSPORT === "http"){
       if (directCtrlSendInterval!==null){
             clearInterval(directCtrlSendInterval);
       }
@@ -332,13 +382,27 @@ export function start(pc, dc) {
 
   function tryToRtcmSend(){
       if (tryToRtcmCount > 0){
+          //pcConnectionState = "";  connecting->connected->disconnected->failed
           if (tryToRtcmState === "sending"){
               return;
           }else if (tryToRtcmState === "success"){
-              // clearInterval(tryToRtcmInterval);
-              // tryToRtcmInterval = null;
-              tryToRtcmCount = 4;
+              // if (tryToRtcmInterval !== null){
+              //     clearInterval(tryToRtcmInterval);
+              //     tryToRtcmInterval = null;
+              // }
+              if (pcConnected) {
+                  console.log("RTCM via DataChannel connected successfully.");
+                  tryToRtcmCount = 4;
+                  tryToRtcmState = "wait_for_lost";
+              }
               return;
+          } else if (tryToRtcmState === "wait_for_lost"){
+              if (!pcConnected) {
+                  console.log("RTCM via DataChannel lost connected. Try to reconnect.");
+                  tryToRtcmCount = 4;
+              } else {
+                  return;
+              }
           }
           console.log("Trying to send RTCM via DataChannel, attempts left:", tryToRtcmCount);
           tryToRtcmState = "sending";

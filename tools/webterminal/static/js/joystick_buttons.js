@@ -1,7 +1,6 @@
 
 import { SliderController } from './slider_controller.js';
-import { SteeringWheelJoystick } from './steer_wheel.js';
-import { executePlan } from "./controls.js";
+import { SteeringWheelJoystick } from './steer_wheel.js'; 
 
 let isJoystickActive = false;
 let isJoystickCruise = false;
@@ -22,7 +21,6 @@ function togglePlotterModal() {
     } else {
         parametersPanel.classList.add('visible');
         plotterBut.classList.add('active');
-        executePlan();
     }
 }
 
@@ -55,9 +53,6 @@ function toggleJoystickEnableState() {
     } else {
         enableJoystick();
     }
-
-    steeringWheelJoystick.setJoystickActive(isJoystickActive);
-
 }
 
 
