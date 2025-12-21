@@ -1,6 +1,6 @@
 
 import { SliderController } from './slider_controller.js';
-import { SteeringWheelJoystick } from './steer_wheel.js'; 
+import { SteeringWheelJoystick } from './steer_wheel.js';
 
 let isJoystickActive = false;
 let isJoystickCruise = false;
@@ -502,6 +502,13 @@ export function onWindowResizeNext() {
 
 export function getIsJoystickActive(){
     return isJoystickActive;
+}
+export function setIsJoystickActive(state){
+    if (state) {
+        enableJoystick();
+    }else {
+        disableJoystick();
+    }
 }
 
 export function setCruiseEnabledActive(isEnabled){

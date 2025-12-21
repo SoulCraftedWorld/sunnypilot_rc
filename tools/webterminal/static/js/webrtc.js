@@ -1,5 +1,5 @@
 import { pingPoints, batteryPoints, chartPing, chartBattery } from "./plots.js";
-import {getJoystickXY, onWindowResizeNext, setSteerMaxRotationAngle, setSteerCurrent, setCruiseEnabledActive} from "./joystick_buttons.js";
+import {getJoystickXY, onWindowResizeNext, setIsJoystickActive, setSteerCurrent, setCruiseEnabledActive} from "./joystick_buttons.js";
 import {CLIENT_ID} from "./jsmain.js";
 
 export let controlCommandInterval = null;
@@ -9,6 +9,7 @@ export let lastChannelMessageTime = null;
 let pcConnectionState = ""; // connecting->connected->disconnected->failed
 let pcConnected = false;
 let pcConnectionLost = false;
+let pcConnectionLostChecked = false;
 let pcConnectionLostTimeout = 0;
 let directCtrlSendInterval = null;
 let tryToRtcmInterval = null;
@@ -19,6 +20,27 @@ let sendCtrlCounter = 0;
 const ALIVE_WINDOW_MS = 3000;
 
 const CONTROL_TRANSPORT = "http"; // "http" | "dc"
+
+let reconnectInProgress = false;
+let lastReconnectAt = 0;
+
+function clearRtcmInterval() {
+  if (tryToRtcmInterval !== null) {
+    clearInterval(tryToRtcmInterval);
+    tryToRtcmInterval = null;
+  }
+}
+
+
+function isPcHealthy(pc) {
+  return pc && (pc.connectionState === "connected" ||
+                pc.iceConnectionState === "connected" ||
+                pc.iceConnectionState === "completed");
+}
+
+function isDcOpen(dc) {
+  return dc && dc.readyState === "open";
+}
 
 export function onWindowResize(){
         onWindowResizeNext();
@@ -49,6 +71,7 @@ async function sendJoystickDirectCtrl() {
         return;
     }
     sendJoystickInProgress = true;
+
     const {steer_deg, accel_brake, isJoystickActive, isJoystickCruise} = getJoystickXY();
     var message = {
         type: "web_control",
@@ -64,12 +87,12 @@ async function sendJoystickDirectCtrl() {
     try {
         const now = new Date().getTime();
         if (!pcConnectionLost || ((now - pcConnectionLostTimeout ) < 600)){
+
             const result = await sendCtrl(message);
             sendCtrlCounter += 1;
             if (sendCtrlCounter % 5 === 0) {
+                 pcConnectionLostChecked = false;
                 if (result.ok) {
-
-
                     if ("is_master" in result) {
                         const isMaster = result["is_master"];
                         const source_control = ("source_control" in result) ? result.source_control : "NaN";
@@ -102,10 +125,29 @@ async function sendJoystickDirectCtrl() {
                 }
             }
         }else{
-            $("#ctrl_state").css("color", "rgba(236,27,27,0.88)").text("LOST");
+            if (!pcConnectionLostChecked) {
+                pcConnectionLostChecked = true;
+                $("#ctrl_state").css("color", "rgba(236,27,27,0.88)").text("LOST");
+                $("#ctrl_state").css("color", "rgba(255,111,0,0.9)").text("N/A");
+                setCruiseEnabledActive(false);
+                setIsJoystickActive(false);
+                var zero_message = {
+                    type: "web_control",
+                    data: {
+                        seq: Date.now(),
+                        steering_angle_deg: 0.0,
+                        brake_and_accel: 0.0,
+                        control_enabled: false,
+                        cruise_manual_set: false,
+                        ext_flags: [false, false, false, false]
+                    }
+                };
+                await sendCtrl(zero_message);
+            }
         }
     } catch (e) {
         console.error('sendJoystick failed:', e);
+
     }
     sendJoystickInProgress = false;
 }
@@ -209,12 +251,10 @@ export function createPeerConnection(pc) {
       if (pc.connectionState === "connected"){
            pcConnectionLost = false;
           pcConnected = true;
-      }else if (pc.connectionState === "disconnected" || pc.connectionState === "failed"){
+      }else if ( pc.connectionState === "failed"){
           pcConnected = false;
-          if (pcConnectionState === "failed"){
-              pcConnectionLostTimeout = new Date().getTime();
-              pcConnectionLost = true;
-          }
+          pcConnectionLostTimeout = new Date().getTime();
+          pcConnectionLost = true;
       }
       pcConnectionState = pc.connectionState;
   });
@@ -222,37 +262,39 @@ export function createPeerConnection(pc) {
   return pc;
 }
 
-export function negotiate(pc) {
-  return pc.createOffer({offerToReceiveVideo:true}).then(function(offer) {
-    return pc.setLocalDescription(offer);
-  }).then(function() {
-    return new Promise(function(resolve) {
-      if (pc.iceGatheringState === 'complete') {
-        resolve();
-      }
-      else {
-        function checkState() {
-          if (pc.iceGatheringState === 'complete') {
-            pc.removeEventListener('icegatheringstatechange', checkState);
-            resolve();
-          }
-        }
-        pc.addEventListener('icegatheringstatechange', checkState);
-      }
-    });
-  }).then(function() {
-    var offer = pc.localDescription;
-    console.log("Sending offer: ", offer);
-    return offerRtcRequest(offer.sdp, offer.type);
-  }).then(function(response) {
-    console.log(response);
-    return response.json();
-  }).then(function(answer) {
-    return pc.setRemoteDescription(answer);
-  }).catch(function(e) {
-    throw new Error(e);
-    //alert(e);
-  });
+export function negotiate(pc, iceRestart = false) {
+    if (pc.signalingState !== "stable") {
+        return Promise.resolve(); // не лезем в переговоры в нестабильном состоянии
+    }
+
+    return pc.createOffer({offerToReceiveVideo:true, iceRestart})
+      .then(function(offer) { return pc.setLocalDescription(offer);  })
+      .then(function() {
+          return new Promise( function(resolve) {
+              if (pc.iceGatheringState === 'complete') { resolve();  }
+              else {
+                function checkState() {
+                  if (pc.iceGatheringState === 'complete') {
+                    pc.removeEventListener('icegatheringstatechange', checkState);
+                    resolve();
+                  }
+                }
+                pc.addEventListener('icegatheringstatechange', checkState);
+              }
+          });
+      }) .then(function() {
+            var offer = pc.localDescription;
+            console.log("Sending offer: ", offer);
+            return offerRtcRequest(offer.sdp, offer.type);
+      })
+      .then(response => response.json())
+      .then(answer => pc.setRemoteDescription(answer));
+      //   .then(function(response) {
+      //   console.log(response);
+      //   return response.json();
+      // }).then(function(answer) {
+      //   return pc.setRemoteDescription(answer);
+      // });
 }
 
 
@@ -381,6 +423,60 @@ export function start(pc, dc) {
   }
 
   function tryToRtcmSend(){
+      if (tryToRtcmState === "wait_for_lost"){
+          if (!pcConnected) {
+              console.log("RTCM via DataChannel lost connected. Try to reconnect.");
+              tryToRtcmCount = 4;
+              tryToRtcmState = "error";
+          } else {
+              return;
+          }
+      }
+
+      const now = Date.now();
+      // Если уже всё хорошо — прекращаем цикл
+      if (isPcHealthy(pc) && isDcOpen(dc)) {
+        if (tryToRtcmState !== "wait_for_lost") {
+          console.log("RTCM via DataChannel connected successfully.");
+          tryToRtcmState = "wait_for_lost";
+        }
+        // clearRtcmInterval();
+        return;
+      }
+      // Троттлинг, чтобы не запускать переговоры слишком часто
+      if (reconnectInProgress) return;
+      if (now - lastReconnectAt < 2500) return;
+
+      // Если попытки кончились — останавливаем
+      if (tryToRtcmCount <= 0) {
+        clearRtcmInterval();
+        console.error("RTCM reconnect attempts exhausted");
+        return;
+      }
+      // Если connectionState failed/disconnected — делаем ICE restart
+      const needIceRestart = (pc.iceConnectionState === "failed" || pc.iceConnectionState === "disconnected");
+
+      console.log("Trying to reconnect WebRTC, attempts left:", tryToRtcmCount, "iceRestart=", needIceRestart);
+
+      reconnectInProgress = true;
+      lastReconnectAt = now;
+      tryToRtcmState = "sending";
+
+      negotiate(pc, needIceRestart)
+        .then(() => {
+          tryToRtcmState = "init";
+        })
+        .catch((err) => {
+          console.error("negotiate error:", String(err).slice(0, 400));
+          tryToRtcmCount -= 1;
+          tryToRtcmState = "error";
+        })
+        .finally(() => {
+          reconnectInProgress = false;
+        });
+    }
+
+    function tryToRtcmSendOld(){
       if (tryToRtcmCount > 0){
           //pcConnectionState = "";  connecting->connected->disconnected->failed
           if (tryToRtcmState === "sending"){
@@ -413,23 +509,31 @@ export function start(pc, dc) {
                   tryToRtcmState = "error";
                   tryToRtcmCount -= 1;
                   if (tryToRtcmCount <= 0){
+                      if (tryToRtcmInterval !== null){
                         clearInterval(tryToRtcmInterval);
-                        alert('Negotiation RTCM offer failed: ' + err_msg);
+                        tryToRtcmInterval = null;
+                      }
+
+                      alert('Negotiation RTCM offer failed: ' + err_msg);
                         // throw new Error(`offer failed ${err}: ${txt.slice(0,400)}`);
                   }
                 });
 
       } else {
-          clearInterval(tryToRtcmInterval);
-          tryToRtcmInterval = null;
+           if (tryToRtcmInterval !== null){
+               clearInterval(tryToRtcmInterval);
+               tryToRtcmInterval = null;
+           }
       }
   }
 
   // Попытаться отправить RTCM запрос несколько раз
   tryToRtcmCount = 4;
+   if (tryToRtcmInterval !== null){
+       clearInterval(tryToRtcmInterval);
+   }
   tryToRtcmInterval = setInterval(tryToRtcmSend, 2000);
   tryToRtcmSend();
-
 
   return { pc, dc };
 }
