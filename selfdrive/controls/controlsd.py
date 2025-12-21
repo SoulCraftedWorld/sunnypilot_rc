@@ -323,12 +323,15 @@ class Controls(ControlsExt, ModelStateBase):
       CC.cruiseControl.override = not CC.longActive and self.CP.openpilotLongitudinalControl
       CC.cruiseControl.resume = CS.cruiseState.standstill and self._remoteControl.brakeAndAccel > 0.0
       # CC.cruiseControl.resume = CS.cruiseState.standstill and self._remoteControl.brakeAndAccel > 0.0 and not self.sm['longitudinalPlan'].shouldStop
-      CC.cruiseControl.speedOverrideDEPRECATED = self._remoteControl.check_cruise_manual_activation(CS.cruiseState.enabled) and self.CP.pcmCruise
+      if self._remoteControl.check_cruise_manual_activation(CS.cruiseState.enabled) and self.CP.pcmCruise:
+        CC.cruiseControl.speedOverrideDEPRECATED = 1.0
+      else:
+        CC.cruiseControl.speedOverrideDEPRECATED = 0.0
       CC.cruiseControl.cancel = CS.cruiseState.enabled and (not self.CP.pcmCruise)
     else:
       CC.cruiseControl.override = CC.enabled and not CC.longActive and self.CP.openpilotLongitudinalControl
       CC.cruiseControl.resume = CC.enabled and CS.cruiseState.standstill and not self.sm['longitudinalPlan'].shouldStop
-      CC.cruiseControl.speedOverrideDEPRECATED = False
+      CC.cruiseControl.speedOverrideDEPRECATED = 0.0
       CC.cruiseControl.cancel = CS.cruiseState.enabled and (not CC.enabled or not self.CP.pcmCruise)
 
 
