@@ -10,13 +10,15 @@ let directCtrlSendInterval = null;
 let tryToRtcmInterval = null;
 let tryToRtcmCount = 4;
 let tryToRtcmState = "init";
+let sendJoystickInProgress = false;
+let sendCtrlCounter = 0;
 const USE_DIRECT_CTRL_OVER_HTTP = true;
 
 export function onWindowResize(){
         onWindowResizeNext();
 }
 
-export async function sendCtrl(cmd) {
+async function sendCtrl(cmd) {
   const resp = await fetch("/ctrl", {
     method: "POST",
     headers: {
@@ -35,64 +37,65 @@ export async function sendCtrl(cmd) {
   return await resp.json(); // если сервер что-то возвращает
 }
 
-function sendJoystickDirectCtrl() {
-    const {steer_deg, accel_brake, isJoystickActive ,isJoystickCruise} = getJoystickXY();
-
-    var message = {type: "web_control",
+async function sendJoystickDirectCtrl() {
+    if (sendJoystickInProgress){
+        return;
+    }
+    sendJoystickInProgress = true;
+    const {steer_deg, accel_brake, isJoystickActive, isJoystickCruise} = getJoystickXY();
+    var message = {
+        type: "web_control",
         data: {
-          seq: Date.now(),
-          steering_angle_deg: steer_deg,
-          brake_and_accel: accel_brake,
-          control_enabled: isJoystickActive,
-          cruise_manual_set: isJoystickCruise,
-          ext_flags: [false, false, false, false]
-        }};
-      try{
-        const result = sendCtrl(message);
-        if (result.ok ){
-            if ("is_master" in result){
-                const isMaster = result["is_master"];
-                const source_control = result["source_control"]? source_control in result: "NaN";
-                if (isMaster){
-                    if (source_control === "web") {
-                        $("#ctrl_state").fontColor = "rgb(100,204,100)";
-                        $("#ctrl_state").text("WEB");
-                    }else if (source_control === "udp") {
-                        $("#ctrl_state").fontColor = "rgb(43,85,152)";
-                        $("#ctrl_state").text("UDP");
-                    }else if (source_control === "none") {
-                        $("#ctrl_state").fontColor = "rgba(248,248,245,0.87)";
-                        $("#ctrl_state").text("OFF");
-                    }else {
-                         $("#ctrl_state").fontColor = "rgba(255,217,0,0.87)";
-                        $("#ctrl_state").text(source_control);
+            seq: Date.now(),
+            steering_angle_deg: steer_deg,
+            brake_and_accel: accel_brake,
+            control_enabled: isJoystickActive,
+            cruise_manual_set: isJoystickCruise,
+            ext_flags: [false, false, false, false]
+        }
+    };
+    try {
+        const result = await sendCtrl(message);
+        sendCtrlCounter += 1;
+        if (sendCtrlCounter % 5 === 0) {
+            if (result.ok) {
+
+
+                if ("is_master" in result) {
+                    const isMaster = result["is_master"];
+                    const source_control = ("source_control" in result) ? result.source_control : "NaN";
+                    if (isMaster) {
+                        if (source_control === "web") {
+                            $("#ctrl_state").css("color", "rgb(100,204,100)").text("WEB");
+                        } else if (source_control === "udp") {
+                            $("#ctrl_state").css("color", "rgb(43,85,152)").text("UDP");
+                        } else if (source_control === "none") {
+                            $("#ctrl_state").css("color", "rgba(248,248,245,0.87)").text("OFF");
+                        } else {
+                            $("#ctrl_state").css("color", "rgba(255,217,0,0.87)").text(source_control);
+                        }
+                    } else {
+                        if (source_control === "web") {
+                            $("#ctrl_state").css("color", "rgb(200,0,255)").text("EXT web??");
+                        } else if (source_control === "udp") {
+                            $("#ctrl_state").css("color", "rgb(43,47,152)").text("UDP??");
+                        } else if (source_control === "none") {
+                            $("#ctrl_state").css("color", "rgba(248,248,245,0.87)").text("OFF??");
+                        } else {
+                            $("#ctrl_state").css("color", "rgba(255,217,0,0.87)").text(source_control + "??");
+                        }
                     }
                 } else {
-                    if (source_control === "web") {
-                        $("#ctrl_state").fontColor = "rgb(200,0,255)";
-                        $("#ctrl_state").text("web?");
-                    }else if (source_control === "udp") {
-                        $("#ctrl_state").fontColor = "rgb(43,47,152)";
-                        $("#ctrl_state").text("UDP?");
-                    }else if (source_control === "none") {
-                        $("#ctrl_state").fontColor = "rgba(248,248,245,0.87)";
-                        $("#ctrl_state").text("OFF?");
-                    }else {
-                         $("#ctrl_state").fontColor = "rgba(255,217,0,0.87)";
-                        $("#ctrl_state").text(source_control+"?");
-                    }
+                    $("#ctrl_state").css("color", "rgba(255,111,0,0.9)").text("N/A");
                 }
             } else {
-                $("#ctrl_state").fontColor =  "rgba(255,111,0,0.9)";
-                $("#ctrl_state").text("N/A");
+                $("#ctrl_state").css("color", "rgba(255,0,0,0.88)").text("ERR");
             }
-        }else {
-            $("#ctrl_state").fontColor = "rgba(255,0,0,0.88)";
-            $("#ctrl_state").text("ERR");
         }
-      }  catch (e) {
+    } catch (e) {
         console.error('sendJoystick failed:', e);
-      }
+    }
+    sendJoystickInProgress = false;
 }
 
 export async function offerRtcRequest(sdp, type) {
@@ -266,14 +269,14 @@ export function start(pc, dc) {
      if (latencyInterval!==null){
         clearInterval(latencyInterval);
      }
-     if (!USE_DIRECT_CTRL_OVER_HTTP){
+     if (USE_DIRECT_CTRL_OVER_HTTP){
          controlCommandInterval = setInterval(sendJoystickOverDataChannel, 50);
          sendJoystickOverDataChannel();
-         if (latencyInterval!==null){
-            clearInterval(latencyInterval);
-         }
-         latencyInterval = setInterval(checkLatency, 1000);
      }
+     if (latencyInterval!==null){
+         clearInterval(latencyInterval);
+     }
+     latencyInterval = setInterval(checkLatency, 1000);
   };
 
   const textDecoder = new TextDecoder();
@@ -320,10 +323,6 @@ export function start(pc, dc) {
 
 
   if (USE_DIRECT_CTRL_OVER_HTTP){
-      if (latencyInterval!==null){
-            clearInterval(latencyInterval);
-      }
-      latencyInterval = setInterval(checkLatency, 1000);
       if (directCtrlSendInterval!==null){
             clearInterval(directCtrlSendInterval);
       }

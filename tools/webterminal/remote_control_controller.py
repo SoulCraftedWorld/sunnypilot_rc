@@ -163,8 +163,8 @@ class RemoteControlController:
   def collect_telemetry(self, now_ns: int)-> Optional[Dict]:
       # --- telemetry out ---
       self.sm.update(0)
-      if not self.sm.updated.get("carState", False):
-        return None
+      # if not self.sm.updated.get("carState", False):
+      #   return None
 
       # Remote control state for debud use 'controlsState'
       ctrl_s = self.sm["controlsState"]

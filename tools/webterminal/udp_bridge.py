@@ -139,7 +139,9 @@ class UdpJoyTelemetryBridge(asyncio.DatagramProtocol):
       if self._last_sender is not None:
         pear: Tuple[str, int] = (self._last_sender[0], self.send_port)
         return pear
-
+      # brudcast or no transport
+      pear: Tuple[str, int] = ( "192.168.100.68" , self.send_port)
+      return pear
     return None
 
   def send_telemetry(self, msg: Dict[str, Any]) -> None:
