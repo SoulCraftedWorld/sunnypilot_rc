@@ -128,7 +128,8 @@ procs = [
   NativeProcess("_pandad", "selfdrive/pandad", ["./pandad"], always_run, enabled=False),
   PythonProcess("calibrationd", "selfdrive.locationd.calibrationd", only_onroad),
   PythonProcess("torqued", "selfdrive.locationd.torqued", only_onroad),
-  PythonProcess("controlsd", "selfdrive.controls.controlsd", and_(not_joystick, iscar)),
+  PythonProcess("controlsd", "selfdrive.controls.controlsd", iscar),
+  # PythonProcess("controlsd", "selfdrive.controls.controlsd", and_(not_joystick, iscar)),
   # PythonProcess("joystickd", "tools.joystick.joystickd", or_(joystick, notcar)),
   PythonProcess("selfdrived", "selfdrive.selfdrived.selfdrived", only_onroad),
   PythonProcess("card", "selfdrive.car.card", or_(joystick, only_onroad)), # only_onroad
@@ -151,7 +152,7 @@ procs = [
   PythonProcess("feedbackd", "selfdrive.ui.feedback.feedbackd", only_onroad),
 
   # debug procs
-  NativeProcess("bridge", "cereal/messaging", ["./bridge"], or_(joystick, notcar)),
+  # NativeProcess("bridge", "cereal/messaging", ["./bridge"], or_(joystick, notcar)),
   PythonProcess("webrtcd", "system.webrtc.webrtcd", or_(joystick, notcar)),
   PythonProcess("webterminal", "tools.webterminal.web", always_run),
 

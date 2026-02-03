@@ -418,7 +418,7 @@ export function start(pc, dc) {
       if (directCtrlSendInterval!==null){
             clearInterval(directCtrlSendInterval);
       }
-      directCtrlSendInterval = setInterval(sendJoystickDirectCtrl, 50);
+      directCtrlSendInterval = setInterval(sendJoystickDirectCtrl, 100);
       sendJoystickDirectCtrl();
   }
 
