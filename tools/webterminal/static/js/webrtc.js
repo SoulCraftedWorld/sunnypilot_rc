@@ -31,7 +31,6 @@ function clearRtcmInterval() {
   }
 }
 
-
 function isPcHealthy(pc) {
   return pc && (pc.connectionState === "connected" ||
                 pc.iceConnectionState === "connected" ||
@@ -422,17 +421,7 @@ export function start(pc, dc) {
       sendJoystickDirectCtrl();
   }
 
-  function tryToRtcmSend(){
-      if (tryToRtcmState === "wait_for_lost"){
-          if (!pcConnected) {
-              console.log("RTCM via DataChannel lost connected. Try to reconnect.");
-              tryToRtcmCount = 4;
-              tryToRtcmState = "error";
-          } else {
-              return;
-          }
-      }
-
+  function tryToRtcmSend2(){
       const now = Date.now();
       // Если уже всё хорошо — прекращаем цикл
       if (isPcHealthy(pc) && isDcOpen(dc)) {
@@ -445,8 +434,15 @@ export function start(pc, dc) {
       }
       // Троттлинг, чтобы не запускать переговоры слишком часто
       if (reconnectInProgress) return;
-      if (now - lastReconnectAt < 2500) return;
-
+      // if (now - lastReconnectAt < 2500) return;
+      //
+      //  else if (tryToRtcmState === "wait_for_lost") {
+      //     if (){
+      //         tryToRtcmCount = 4;
+      //     }else{
+      //         return;
+      //     }
+      // }
       // Если попытки кончились — останавливаем
       if (tryToRtcmCount <= 0) {
         clearRtcmInterval();
@@ -476,7 +472,7 @@ export function start(pc, dc) {
         });
     }
 
-    function tryToRtcmSendOld(){
+    function tryToRtcmSend2(){
       if (tryToRtcmCount > 0){
           //pcConnectionState = "";  connecting->connected->disconnected->failed
           if (tryToRtcmState === "sending"){

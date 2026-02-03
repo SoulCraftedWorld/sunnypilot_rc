@@ -125,7 +125,7 @@ procs = [
   PythonProcess("raylib_ui", "selfdrive.ui.ui", always_run, enabled=False, watchdog_max_dt=(5 if not PC else None)),
   PythonProcess("soundd", "selfdrive.ui.soundd", only_onroad),
   PythonProcess("locationd", "selfdrive.locationd.locationd", only_onroad),
-  # NativeProcess("_pandad", "selfdrive/pandad", ["./pandad"], always_run, enabled=False),
+  NativeProcess("_pandad", "selfdrive/pandad", ["./pandad"], always_run, enabled=False),
   PythonProcess("calibrationd", "selfdrive.locationd.calibrationd", only_onroad),
   PythonProcess("torqued", "selfdrive.locationd.torqued", only_onroad),
   PythonProcess("controlsd", "selfdrive.controls.controlsd", and_(not_joystick, iscar)),
@@ -135,7 +135,7 @@ procs = [
   PythonProcess("deleter", "system.loggerd.deleter", always_run),
   PythonProcess("dmonitoringd", "selfdrive.monitoring.dmonitoringd", driverview, enabled=(WEBCAM or not PC)),
   PythonProcess("qcomgpsd", "system.qcomgpsd.qcomgpsd", qcomgps, enabled=TICI),
-  # PythonProcess("pandad", "selfdrive.pandad.pandad", always_run),
+  PythonProcess("pandad", "selfdrive.pandad.pandad", always_run),
   PythonProcess("paramsd", "selfdrive.locationd.paramsd", only_onroad),
   PythonProcess("lagd", "selfdrive.locationd.lagd", only_onroad),
   NativeProcess("ubloxd", "system/ubloxd", ["./ubloxd"], ublox, enabled=TICI),
@@ -153,7 +153,7 @@ procs = [
   # debug procs
   NativeProcess("bridge", "cereal/messaging", ["./bridge"], or_(joystick, notcar)),
   PythonProcess("webrtcd", "system.webrtc.webrtcd", or_(joystick, notcar)),
-  # PythonProcess("webterminal", "tools.webterminal.web", always_run),
+  PythonProcess("webterminal", "tools.webterminal.web", always_run),
 
   # PythonProcess("webjoystick", "tools.bodyteleop.web", notcar),
   # PythonProcess("joystick", "tools.joystick.joystick_control", and_(joystick, iscar)),
