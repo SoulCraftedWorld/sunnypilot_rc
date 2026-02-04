@@ -57,6 +57,7 @@ class RemoteControl:
     self.comma_cc_enabled = False
     self.comma_latActive = False
     self.comma_longActive = False
+    self.steer_limited_by_safety = 0.0
 
     self.logTimer = time.monotonic()
 
@@ -99,10 +100,17 @@ class RemoteControl:
     if self.logTimer < time.monotonic():
       self.logTimer = time.monotonic() + 2.
       cloudlog.error(f"Log remote control: "
-                     f"enabled={self.enabled}, "
-                     f"cruiseSet={self.cruiseManualActivation}, "
-                     f"brakeAcc={(self.brakeAndAccel*100.0):.1f}, "
-                     f"steerCmd={self.steeringAngleDeg}:.1f")
+                     f"EN={self.enabled}, "
+                     f"cruiseBut={self.cruiseManualActivation}, "
+                     f"brkAcc={(self.brakeAndAccel*100.0):.1f}, "
+                     f"steer={self.steeringAngleDeg:.1f}, "
+                     f"IsAct={self.is_active}, "
+                     f"Targ/Cur/limCurv={self.target_curvature:.3f}/{self.state_curvature:.3f}/{self.steer_limited_by_safety:.3f}, "
+                     f"CCisEn={self.state_cc_enabled}, "
+                     f"CCEn={self.comma_cc_enabled}, "
+                     f"latEn={self.comma_latActive}, "
+                     f"lonEn={self.comma_longActive}, "
+                     )
 
   def check_timeout(self):
     if self.enabled and (time.monotonic() - self.timestamp) > self.timeout:
@@ -331,9 +339,10 @@ class Controls(ControlsExt, ModelStateBase):
 
     # Handle manual cruise set On
     if self._remoteControl.enabled:
-      CC.cruiseControl.override = not CC.longActive and self.CP.openpilotLongitudinalControl
+      CC.cruiseControl.override = not CC.longActive   # and self.CP.openpilotLongitudinalControl
       CC.cruiseControl.resume = CS.cruiseState.standstill and self._remoteControl.brakeAndAccel > 0.0
-      CC.cruiseControl.resume = CS.cruiseState.standstill and self._remoteControl.brakeAndAccel > 0.0 and not self.sm['longitudinalPlan'].shouldStop
+      # FIXME Испоьзовать флаги экстренной остановки от COMMA
+      # CC.cruiseControl.resume = CS.cruiseState.standstill and self._remoteControl.brakeAndAccel > 0.0 and not self.sm['longitudinalPlan'].shouldStop
       if self._remoteControl.check_cruise_manual_activation(CS.cruiseState.enabled) and self.CP.pcmCruise:
         CC.cruiseControl.speedOverrideDEPRECATED = 1.0
       else:
@@ -369,6 +378,8 @@ class Controls(ControlsExt, ModelStateBase):
                                               STEER_ANGLE_SATURATION_THRESHOLD
       else:
         self.steer_limited_by_safety = abs(CC.actuators.torque - CO.actuatorsOutput.torque) > 1e-2
+
+    self._remoteControl.steer_limited_by_safety = self.steer_limited_by_safety
 
     # TODO: both controlsState and carControl valids should be set by
     #       sm.all_checks(), but this creates a circular dependency
