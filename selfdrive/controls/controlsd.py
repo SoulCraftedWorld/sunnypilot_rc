@@ -95,7 +95,13 @@ class RemoteControl:
         elif self.brakeAndAccel < -1.0:
           self.brakeAndAccel = -1.0
 
-        self.enabled = joystick.buttons[1]
+        enabled = joystick.buttons[1]
+        if enabled != self.enabled:
+          if self.brakeAndAccel >= 0.0:
+            self.logTimer = time.monotonic()
+
+          self.enabled  = enabled
+
         self.cruiseManualActivation = joystick.buttons[2]
         self.reserveFlag1 = joystick.buttons[3]
         self.reserveFlag2 = joystick.buttons[4]
@@ -104,7 +110,7 @@ class RemoteControl:
         self.timestamp = time.monotonic()
 
   def print_log(self):
-    if self.logTimer < time.monotonic() or self.enabled:
+    if self.logTimer < time.monotonic():
       dt = 2 if not self.enabled else 0.5
       self.logTimer = time.monotonic() + dt
 
