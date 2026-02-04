@@ -359,10 +359,10 @@ class Controls(ControlsExt, ModelStateBase):
 
     # Handle manual cruise set On
     if self._remoteControl.enabled:
-      CC.cruiseControl.override = not CC.longActive   # and self.CP.openpilotLongitudinalControl
-      CC.cruiseControl.resume = CS.cruiseState.standstill and self._remoteControl.is_active and self._remoteControl.brakeAndAccel > 0.0
+      CC.cruiseControl.override = not CC.longActive  and self.CP.openpilotLongitudinalControl
+      # CC.cruiseControl.resume = CS.cruiseState.standstill and self._remoteControl.is_active and self._remoteControl.brakeAndAccel > 0.0
       # FIXME Испоьзовать флаги экстренной остановки от COMMA
-      # CC.cruiseControl.resume = CS.cruiseState.standstill and self._remoteControl.brakeAndAccel > 0.0 and not self.sm['longitudinalPlan'].shouldStop
+      CC.cruiseControl.resume = CS.cruiseState.standstill and self._remoteControl.brakeAndAccel > 0.0 and not self.sm['longitudinalPlan'].shouldStop
 
       # if self._remoteControl.check_cruise_manual_activation(CS.cruiseState.enabled) and self.CP.pcmCruise:
       #   CC.cruiseControl.speedOverrideDEPRECATED = 1.0
@@ -377,7 +377,6 @@ class Controls(ControlsExt, ModelStateBase):
       CC.cruiseControl.resume = CC.enabled and CS.cruiseState.standstill and not self.sm['longitudinalPlan'].shouldStop
       CC.cruiseControl.speedOverrideDEPRECATED = 0.0
       CC.cruiseControl.cancel = CS.cruiseState.enabled and (not CC.enabled or not self.CP.pcmCruise)
-
 
     hudControl = CC.hudControl
     hudControl.setSpeed = float(CS.vCruiseCluster * CV.KPH_TO_MS)
