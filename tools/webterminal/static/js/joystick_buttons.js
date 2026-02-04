@@ -133,7 +133,7 @@ export function setSteerMaxRotationAngle(value) {
 
 export function setSteerCurrent(value) {
     if (steeringWheelJoystick !== null) {
-        steeringWheelJoystick.setHardwareSteerAngle(value);
+        steeringWheelJoystick.setHardwareSteerAngle(-value);
     }
 }
 
@@ -360,7 +360,10 @@ function getSteerAngle() {
         ang = steeringWheelJoystick.getSteerAngle();
         if (ang === null){
             ang = 0.0;
+        }else{
+            ang = -ang;
         }
+
     }
     return ang;
 }

@@ -58,6 +58,7 @@ class RemoteControl:
     self.comma_latActive = False
     self.comma_longActive = False
 
+    self.logTimer = time.monotonic()
 
     self.steerWheelMaxDeg = 540.0  # default value, will be updated in Controls init
 
@@ -94,6 +95,14 @@ class RemoteControl:
         self.reserveFlag3 = joystick.buttons[5]
         self.reserveFlag4 = joystick.buttons[6]
         self.timestamp = time.monotonic()
+
+    if self.logTimer < time.monotonic():
+      self.logTimer = time.monotonic() + 2.
+      cloudlog.error(f"Log remote control: "
+                     f"enabled={self.enabled}, "
+                     f"cruiseSet={self.cruiseManualActivation}, "
+                     f"brakeAcc={(self.brakeAndAccel*100.0):.1f}, "
+                     f"steerCmd={self.steeringAngleDeg}:.1f")
 
   def check_timeout(self):
     if self.enabled and (time.monotonic() - self.timestamp) > self.timeout:
@@ -225,6 +234,8 @@ class Controls(ControlsExt, ModelStateBase):
     _longActive = CC.enabled and not any(e.overrideLongitudinal for e in self.sm['onroadEvents']) and self.CP.openpilotLongitudinalControl
     if self._remoteControl.enabled:
 
+
+
       self._remoteControl.comma_latActive = _lat_active and not CS.steerFaultTemporary and not CS.steerFaultPermanent and \
                    (not standstill or self.CP.steerAtStandstill)
       self._remoteControl.comma_longActive = _longActive
@@ -322,12 +333,12 @@ class Controls(ControlsExt, ModelStateBase):
     if self._remoteControl.enabled:
       CC.cruiseControl.override = not CC.longActive and self.CP.openpilotLongitudinalControl
       CC.cruiseControl.resume = CS.cruiseState.standstill and self._remoteControl.brakeAndAccel > 0.0
-      # CC.cruiseControl.resume = CS.cruiseState.standstill and self._remoteControl.brakeAndAccel > 0.0 and not self.sm['longitudinalPlan'].shouldStop
-      # if self._remoteControl.check_cruise_manual_activation(CS.cruiseState.enabled) and self.CP.pcmCruise:
-      #   CC.cruiseControl.speedOverrideDEPRECATED = 1.0
-      # else:
-      #   CC.cruiseControl.speedOverrideDEPRECATED = 0.0
-      CC.cruiseControl.speedOverrideDEPRECATED = 0.0
+      CC.cruiseControl.resume = CS.cruiseState.standstill and self._remoteControl.brakeAndAccel > 0.0 and not self.sm['longitudinalPlan'].shouldStop
+      if self._remoteControl.check_cruise_manual_activation(CS.cruiseState.enabled) and self.CP.pcmCruise:
+        CC.cruiseControl.speedOverrideDEPRECATED = 1.0
+      else:
+        CC.cruiseControl.speedOverrideDEPRECATED = 0.0
+      # CC.cruiseControl.speedOverrideDEPRECATED = 0.0
 
       CC.cruiseControl.cancel = CS.cruiseState.enabled and (not self.CP.pcmCruise)
     else:
@@ -390,7 +401,7 @@ class Controls(ControlsExt, ModelStateBase):
     elif lat_tuning == 'torque':
       cs.lateralControlState.torqueState = lac_log
 
-    # Remote control state for debud use
+    # Remote control state for debug use
     cs.enabledDEPRECATED = self._remoteControl.enabled
     cs.activeDEPRECATED = self._remoteControl.is_active
 

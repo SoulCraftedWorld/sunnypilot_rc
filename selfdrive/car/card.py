@@ -257,7 +257,9 @@ class Car:
 
     if self.carStateLogTimer < time.monotonic():
       self.carStateLogTimer = time.monotonic() + 2.
-      cloudlog.error(f"Log carState canValid={CS.canValid}, steerState={CS.steeringAngleDeg}, steerCmd={self.CC_prev.actuators.steeringAngleDeg}")
+      cloudlog.error(f"Log carState canValid={CS.canValid}, "
+                     f"steerState={CS.steeringAngleDeg:.1f}, "
+                     f"steerCmd={self.CC_prev.actuators.steeringAngleDeg:.1f}")
 
     if RD is not None:
       tracks_msg = messaging.new_message('liveTracks')
