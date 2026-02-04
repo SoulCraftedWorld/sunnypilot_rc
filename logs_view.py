@@ -9,7 +9,7 @@ DIR = "/data/log"
 GLOB_MASK = os.path.join(DIR, "swaglog.*")
 
 # Фильтры (можешь менять как хочешь)
-FILTER_DAEMON = ""  #"controlsd"     # None или "" чтобы не фильтровать по daemon
+FILTER_DAEMON = ["controlsd" , "card", "manager", "webrtcd", "stream_encoderd"]  #"selfdrived"
 FILTER_SUBSTR = ""  #"Log remote control:"  # "" чтобы не фильтровать по тексту
 
 # Сколько строк показать при старте (0 = только новые)
@@ -75,7 +75,7 @@ def yield_line(line: str) -> None:
   created = rec.get("created", 0)
 
   # daemon может быть только в ctx (как у тебя), но иногда его нет
-  if FILTER_DAEMON and daemon != FILTER_DAEMON:
+  if FILTER_DAEMON and daemon not in FILTER_DAEMON:
     return
   if FILTER_SUBSTR and FILTER_SUBSTR not in str(msg):
     return

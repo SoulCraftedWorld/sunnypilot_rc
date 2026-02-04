@@ -100,16 +100,16 @@ class RemoteControl:
         self.timestamp = time.monotonic()
 
   def print_log(self):
-    if self.logTimer < time.monotonic():
+    if self.logTimer < time.monotonic() or self.enabled:
       self.logTimer = time.monotonic() + 2.
       cloudlog.error(f"Log remote control: "
                      f"EN={self.enabled}, "
-                     f"RX={self.time_out}, "
+                     f"Act={self.is_active}, "
+                     f"RX={"OK" if self.time_out is False else "NO" }, "
                      f"cruiseBut={self.cruiseManualActivation}, "
                      f"brkAcc={(self.brakeAndAccel*100.0):.1f}, "
                      f"steer={self.steeringAngleDeg:.1f}, "
-                     f"IsAct={self.is_active}, "
-                     f"Targ/Cur/limCurv={self.target_curvature:.3f}/{self.state_curvature:.3f}/{self.steer_limited_by_safety:.3f}, "
+                     f"Set/Cur/LimCurv={self.target_curvature:.3f}/{self.state_curvature:.3f}/{self.steer_limited_by_safety:.3f}, "
                      f"CCisEn={self.state_cc_enabled}, "
                      f"CCEn={self.comma_cc_enabled}, "
                      f"latEn={self.comma_latActive}, "
@@ -199,8 +199,10 @@ class Controls(ControlsExt, ModelStateBase):
 
     if self.sm.updated['testJoystick']:
       self._remoteControl.setNewData(joystick=self.sm['testJoystick'])
+
     self._remoteControl.check_timeout()
     self._remoteControl.on_driver_bake(CS.brakePressed)
+    self._remoteControl.print_log()
 
     # Update VehicleModel
     lp = self.sm['liveParameters']
@@ -245,13 +247,10 @@ class Controls(ControlsExt, ModelStateBase):
     # Get which state to use for active lateral control
     _lat_active = self.get_lat_active(self.sm)
     _longActive = CC.enabled and not any(e.overrideLongitudinal for e in self.sm['onroadEvents']) and self.CP.openpilotLongitudinalControl
+    self._remoteControl.comma_longActive = _longActive
+    self._remoteControl.comma_latActive = _lat_active and not CS.steerFaultTemporary and not CS.steerFaultPermanent and \
+                                          (not standstill or self.CP.steerAtStandstill)
     if self._remoteControl.enabled:
-
-
-
-      self._remoteControl.comma_latActive = _lat_active and not CS.steerFaultTemporary and not CS.steerFaultPermanent and \
-                   (not standstill or self.CP.steerAtStandstill)
-      self._remoteControl.comma_longActive = _longActive
       # self._remoteControl.comma_model_desiredCurvature = model_desiredCurvature
       rc_steer_angle_without_offset = math.radians(self._remoteControl.steeringAngleDeg - lp.angleOffsetDeg)
       self._remoteControl.target_curvature = -self.VM.calc_curvature(rc_steer_angle_without_offset, CS.vEgo, lp.roll)
@@ -264,7 +263,7 @@ class Controls(ControlsExt, ModelStateBase):
       _longActive = self.CP.openpilotLongitudinalControl
 
 
-      self._remoteControl.is_active = _lat_active and any(_longActive or sself.CP.pcmCruise)
+      self._remoteControl.is_active = _lat_active and (_longActive or self.CP.pcmCruise)
     else:
       self._remoteControl.is_active = False
 
@@ -299,7 +298,7 @@ class Controls(ControlsExt, ModelStateBase):
         long_shouldStop = True
         long_aTarget = self._remoteControl.brakeAndAccel * 3.5
       else:
-        if long_plan.hasLead and any(long_plan.shouldStop or long_plan.aTarget < 0.0) and self._remoteControl.comma_longActive:
+        if long_plan.hasLead and (long_plan.shouldStop or long_plan.aTarget < 0.0) and self._remoteControl.comma_longActive:
           # TODO Make case for adaptive
           cloudlog.error(f"Romote conterol accel {self._remoteControl.brakeAndAccel} conflict with lead car: shouldStop {long_plan.shouldStop}, aTarget {long_plan.aTarget}")
 
@@ -345,7 +344,7 @@ class Controls(ControlsExt, ModelStateBase):
     # Handle manual cruise set On
     if self._remoteControl.enabled:
       CC.cruiseControl.override = not CC.longActive   # and self.CP.openpilotLongitudinalControl
-      CC.cruiseControl.resume = CS.cruiseState.standstill and self._remoteControl.brakeAndAccel > 0.0
+      CC.cruiseControl.resume = CS.cruiseState.standstill and self._remoteControl.is_active and self._remoteControl.brakeAndAccel > 0.0
       # FIXME Испоьзовать флаги экстренной остановки от COMMA
       # CC.cruiseControl.resume = CS.cruiseState.standstill and self._remoteControl.brakeAndAccel > 0.0 and not self.sm['longitudinalPlan'].shouldStop
 
