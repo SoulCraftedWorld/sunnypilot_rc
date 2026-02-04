@@ -104,7 +104,7 @@ class RemoteControl:
       self.logTimer = time.monotonic() + 2.
       cloudlog.error(f"Log remote control: "
                      f"EN={self.enabled}, "
-                     f"RX={self.enabled}, "
+                     f"RX={self.time_out}, "
                      f"cruiseBut={self.cruiseManualActivation}, "
                      f"brkAcc={(self.brakeAndAccel*100.0):.1f}, "
                      f"steer={self.steeringAngleDeg:.1f}, "
@@ -348,11 +348,13 @@ class Controls(ControlsExt, ModelStateBase):
       CC.cruiseControl.resume = CS.cruiseState.standstill and self._remoteControl.brakeAndAccel > 0.0
       # FIXME Испоьзовать флаги экстренной остановки от COMMA
       # CC.cruiseControl.resume = CS.cruiseState.standstill and self._remoteControl.brakeAndAccel > 0.0 and not self.sm['longitudinalPlan'].shouldStop
-      if self._remoteControl.check_cruise_manual_activation(CS.cruiseState.enabled) and self.CP.pcmCruise:
-        CC.cruiseControl.speedOverrideDEPRECATED = 1.0
-      else:
-        CC.cruiseControl.speedOverrideDEPRECATED = 0.0
-      # CC.cruiseControl.speedOverrideDEPRECATED = 0.0
+
+      # if self._remoteControl.check_cruise_manual_activation(CS.cruiseState.enabled) and self.CP.pcmCruise:
+      #   CC.cruiseControl.speedOverrideDEPRECATED = 1.0
+      # else:
+      #   CC.cruiseControl.speedOverrideDEPRECATED = 0.0
+
+      CC.cruiseControl.speedOverrideDEPRECATED = 0.0
 
       CC.cruiseControl.cancel = CS.cruiseState.enabled and (not self.CP.pcmCruise)
     else:

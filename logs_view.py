@@ -13,7 +13,7 @@ FILTER_DAEMON = ""  #"controlsd"     # None или "" чтобы не фильт
 FILTER_SUBSTR = ""  #"Log remote control:"  # "" чтобы не фильтровать по тексту
 
 # Сколько строк показать при старте (0 = только новые)
-SHOW_LAST_LINES_ON_START = 50
+SHOW_LAST_LINES_ON_START = 1500
 
 
 def newest_swaglog() -> Optional[str]:
