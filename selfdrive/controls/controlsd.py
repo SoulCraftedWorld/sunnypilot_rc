@@ -36,6 +36,7 @@ class RemoteControl:
   def __init__(self, timeout: float = 1.0) -> None:
 
     self.use_comma_loget_aval_flag = False
+    self.use_comma_lat_aval_flag = False
 
     self.steeringAngleDeg = 0.0  # about -540 ..  +540
     self.brakeAndAccel = 0.0  # negative is brake. -1 ..  +1
@@ -104,7 +105,9 @@ class RemoteControl:
 
   def print_log(self):
     if self.logTimer < time.monotonic() or self.enabled:
-      self.logTimer = time.monotonic() + 2.
+      dt = 2 if not self.enabled else 0.5
+      self.logTimer = time.monotonic() + dt
+
       cloudlog.error(f"Log remote control: "
                      f"EN={self.enabled}, "
                      f"Act={self.is_active}, "
@@ -264,11 +267,11 @@ class Controls(ControlsExt, ModelStateBase):
       if not _lat_active:
         _lat_active = self.sm['selfdriveState'].active
 
-      if not self.use_comma_lat_aval_flag:
+      if not self._remoteControl.use_comma_lat_aval_flag:
         _lat_active = True
 
       CC.enabled  = True
-      _longActive = True if not self.use_comma_loget_aval_flag else self.CP.openpilotLongitudinalControl
+      _longActive = True if not self._remoteControl.use_comma_loget_aval_flag else self.CP.openpilotLongitudinalControl
 
       self._remoteControl.is_active = _lat_active and (_longActive or self.CP.pcmCruise)
     else:
