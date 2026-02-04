@@ -37,6 +37,7 @@ class RemoteControl:
     self.steeringAngleDeg = 0.0  # about -540 ..  +540
     self.brakeAndAccel = 0.0  # negative is brake. -1 ..  +1
     self.enabled = False
+    self.time_out = False
     self.cruiseManualActivation = False
     self.cruiseManualStep = "None"
     self.cruiseManualStartedTimeout = 0.0
@@ -76,6 +77,7 @@ class RemoteControl:
         buttons[ valid, enabled, cruiseManualActivation, reserve1, reserve2, reserve3, reserve4 ]
     """
     if len(joystick.buttons) >= 7:
+      self.time_out = False
       if joystick.buttons[0] and len(joystick.axes) == 2: # valid data and correct axes length
         self.steeringAngleDeg = joystick.axes[0]
         if self.steeringAngleDeg > self.steerWheelMaxDeg:
@@ -97,10 +99,12 @@ class RemoteControl:
         self.reserveFlag4 = joystick.buttons[6]
         self.timestamp = time.monotonic()
 
+  def print_log(self):
     if self.logTimer < time.monotonic():
       self.logTimer = time.monotonic() + 2.
       cloudlog.error(f"Log remote control: "
                      f"EN={self.enabled}, "
+                     f"RX={self.enabled}, "
                      f"cruiseBut={self.cruiseManualActivation}, "
                      f"brkAcc={(self.brakeAndAccel*100.0):.1f}, "
                      f"steer={self.steeringAngleDeg:.1f}, "
@@ -113,7 +117,8 @@ class RemoteControl:
                      )
 
   def check_timeout(self):
-    if self.enabled and (time.monotonic() - self.timestamp) > self.timeout:
+    self.time_out =  (time.monotonic() - self.timestamp) > self.timeout
+    if self.enabled and self.time_out:
       self.enabled = False
       # self.reset()
 

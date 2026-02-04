@@ -264,7 +264,7 @@ class RcControls(ControlsExt, ModelStateBase):
 
 def main():
   config_realtime_process(4, Priority.CTRL_HIGH)
-  controls = Controls()
+  controls = RcControls()
   controls.run()
 
 
