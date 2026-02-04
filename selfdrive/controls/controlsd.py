@@ -34,6 +34,9 @@ ACTUATOR_FIELDS = tuple(car.CarControl.Actuators.schema.fields.keys())
 
 class RemoteControl:
   def __init__(self, timeout: float = 1.0) -> None:
+
+    self.use_comma_loget_aval_flag = False
+
     self.steeringAngleDeg = 0.0  # about -540 ..  +540
     self.brakeAndAccel = 0.0  # negative is brake. -1 ..  +1
     self.enabled = False
@@ -201,7 +204,9 @@ class Controls(ControlsExt, ModelStateBase):
       self._remoteControl.setNewData(joystick=self.sm['testJoystick'])
 
     self._remoteControl.check_timeout()
-    self._remoteControl.on_driver_bake(CS.brakePressed)
+
+    # self._remoteControl.on_driver_bake(CS.brakePressed)
+
     self._remoteControl.print_log()
 
     # Update VehicleModel
@@ -259,9 +264,11 @@ class Controls(ControlsExt, ModelStateBase):
       if not _lat_active:
         _lat_active = self.sm['selfdriveState'].active
 
-      CC.enabled  = True
-      _longActive = self.CP.openpilotLongitudinalControl
+      if not self.use_comma_lat_aval_flag:
+        _lat_active = True
 
+      CC.enabled  = True
+      _longActive = True if not self.use_comma_loget_aval_flag else self.CP.openpilotLongitudinalControl
 
       self._remoteControl.is_active = _lat_active and (_longActive or self.CP.pcmCruise)
     else:
