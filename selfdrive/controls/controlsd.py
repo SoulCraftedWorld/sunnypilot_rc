@@ -129,6 +129,7 @@ class RemoteControl:
                      f"CCEn={self.comma_cc_enabled}, "
                      f"latEn={self.comma_latActive}, "
                      f"lonEn={self.comma_longActive}, "
+                     f"Act/Tq/Deg={self.actuators_torque:.3f}/{self.actuators_steeringAngleDeg:.1f}}, "
                      )
 
   def check_timeout(self):
@@ -218,8 +219,6 @@ class Controls(ControlsExt, ModelStateBase):
     self._remoteControl.check_timeout()
 
     # self._remoteControl.on_driver_bake(CS.brakePressed)
-
-    self._remoteControl.print_log()
 
     # Update VehicleModel
     lp = self.sm['liveParameters']
@@ -451,6 +450,8 @@ class Controls(ControlsExt, ModelStateBase):
     cc_send.valid = CS.canValid
     cc_send.carControl = CC
     self.pm.send('carControl', cc_send)
+
+    self._remoteControl.print_log()
 
   def params_thread(self, evt):
     while not evt.is_set():
