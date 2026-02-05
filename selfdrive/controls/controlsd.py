@@ -129,7 +129,7 @@ class RemoteControl:
                      f"CCEn={self.comma_cc_enabled}, "
                      f"latEn={self.comma_latActive}, "
                      f"lonEn={self.comma_longActive}, "
-                     f"Act/Tq/Deg={self.actuators_torque:.3f}/{self.actuators_steeringAngleDeg:.1f}}, "
+                     f"Act/Tq/Deg={self.actuators_torque:.3f}/{self.actuators_steeringAngleDeg:.1f}, "
                      )
 
   def check_timeout(self):
