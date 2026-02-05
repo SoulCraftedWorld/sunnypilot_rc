@@ -60,6 +60,7 @@ class RemoteControl:
 
     self.actuators_torque = 0.0
     self.actuators_steeringAngleDeg = 0.0
+    self.result_latActive = False
 
     self.comma_model_desired_curvature = 0.0
     self.comma_cc_enabled = False
@@ -127,7 +128,7 @@ class RemoteControl:
                      f"Set/Cur/LimCurv={self.target_curvature:.3f}/{self.state_curvature:.3f}/{self.steer_limited_by_safety:.3f}, "
                      f"CCisEn={self.state_cc_enabled}, "
                      f"CCEn={self.comma_cc_enabled}, "
-                     f"latEn={self.comma_latActive}, "
+                     f"latEn/Result={self.comma_latActive}/{self.result_latActive}, "
                      f"lonEn={self.comma_longActive}, "
                      f"Act/Tq/Deg={self.actuators_torque:.3f}/{self.actuators_steeringAngleDeg:.1f}, "
                      )
@@ -260,6 +261,7 @@ class Controls(ControlsExt, ModelStateBase):
     self._remoteControl.comma_cc_enabled = CC.enabled
     self._remoteControl.comma_model_desired_curvature = model_desired_curvature
 
+
     # Get which state to use for active lateral control
     _lat_active = self.get_lat_active(self.sm)
     _longActive = CC.enabled and not any(e.overrideLongitudinal for e in self.sm['onroadEvents']) and self.CP.openpilotLongitudinalControl
@@ -282,12 +284,15 @@ class Controls(ControlsExt, ModelStateBase):
       _longActive = True if not self._remoteControl.use_comma_loget_aval_flag else self.CP.openpilotLongitudinalControl
 
       self._remoteControl.is_active = _lat_active and (_longActive or self.CP.pcmCruise)
-      CC.latActive = _lat_active and not CS.steerFaultTemporary and not CS.steerFaultPermanent
+      CC.latActive = _lat_active and not CS.steerFaultTemporary and not CS.steerFaultPermanent and not self.CP.steerAtStandstill
     else:
       self._remoteControl.is_active = False
       CC.latActive = self._remoteControl.comma_latActive
 
     CC.longActive = _longActive
+
+    self._remoteControl.result_latActive = CC.latActive
+
 
     actuators = CC.actuators
     actuators.longControlState = self.LoC.long_control_state
@@ -307,6 +312,7 @@ class Controls(ControlsExt, ModelStateBase):
 
     # accel ------
     if not self._remoteControl.enabled:
+
       # accel PID loop
       actuators.accel = float(self.LoC.update(CC.longActive, CS, long_plan.aTarget, long_plan.shouldStop, pid_accel_limits))
 
