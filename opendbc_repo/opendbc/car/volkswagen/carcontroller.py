@@ -115,10 +115,11 @@ class CarController(CarControllerBase):
     # **** Stock ACC Button Controls **************************************** #
 
     gra_send_ready = self.CP.pcmCruise and CS.gra_stock_values["COUNTER"] != self.gra_acc_counter_last
-    if gra_send_ready and (CC.cruiseControl.cancel or CC.cruiseControl.resume):
+    acc_control_use = CC.cruiseControl.speedOverrideDEPRECATED != 0.0
+    if gra_send_ready and (CC.cruiseControl.cancel or CC.cruiseControl.resume or acc_control_use):
       can_sends.append(self.CCS.create_acc_buttons_control(self.packer_pt, self.CAN.ext, CS.gra_stock_values,
                                                            cancel=CC.cruiseControl.cancel, resume=CC.cruiseControl.resume,
-                                                           acc_control_use=CC.cruiseControl.speedOverrideDEPRECATED != 0.0,
+                                                           acc_control_use=acc_control_use,
                                                            acc_set_control=CC.cruiseControl.speedOverrideDEPRECATED != 0.0
                                                            ))
 

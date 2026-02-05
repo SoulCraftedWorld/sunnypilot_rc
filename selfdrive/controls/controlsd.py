@@ -58,7 +58,10 @@ class RemoteControl:
     self.state_curvature = 0.0
     self.state_cc_enabled = False
 
-    self.comma_model_desiredCurvature = 0.0
+    self.actuators_torque = 0.0
+    self.actuators_steeringAngleDeg = 0.0
+
+    self.comma_model_desired_curvature = 0.0
     self.comma_cc_enabled = False
     self.comma_latActive = False
     self.comma_longActive = False
@@ -244,7 +247,7 @@ class Controls(ControlsExt, ModelStateBase):
     long_plan = self.sm['longitudinalPlan']
     model_v2 = self.sm['modelV2']
 
-    model_desiredCurvature = model_v2.action.desiredCurvature
+    model_desired_curvature = model_v2.action.desiredCurvature
 
     CC = car.CarControl.new_message()
     CC.enabled = self.sm['selfdriveState'].enabled
@@ -256,7 +259,7 @@ class Controls(ControlsExt, ModelStateBase):
     self._remoteControl.state_cc_enabled = CS.cruiseState.enabled
     self._remoteControl.state_curvature = self.curvature
     self._remoteControl.comma_cc_enabled = CC.enabled
-    self._remoteControl.comma_model_desiredCurvature = model_desiredCurvature
+    self._remoteControl.comma_model_desired_curvature = model_desired_curvature
 
     # Get which state to use for active lateral control
     _lat_active = self.get_lat_active(self.sm)
@@ -265,10 +268,10 @@ class Controls(ControlsExt, ModelStateBase):
     self._remoteControl.comma_latActive = _lat_active and not CS.steerFaultTemporary and not CS.steerFaultPermanent and \
                                           (not standstill or self.CP.steerAtStandstill)
     if self._remoteControl.enabled:
-      # self._remoteControl.comma_model_desiredCurvature = model_desiredCurvature
+      # self._remoteControl.comma_model_desired_curvature = model_desired_curvature
       rc_steer_angle_without_offset = math.radians(self._remoteControl.steeringAngleDeg - lp.angleOffsetDeg)
       self._remoteControl.target_curvature = -self.VM.calc_curvature(rc_steer_angle_without_offset, CS.vEgo, lp.roll)
-      model_desiredCurvature = self._remoteControl.target_curvature
+      model_desired_curvature = self._remoteControl.target_curvature
 
       if not _lat_active:
         _lat_active = self.sm['selfdriveState'].active
@@ -280,14 +283,12 @@ class Controls(ControlsExt, ModelStateBase):
       _longActive = True if not self._remoteControl.use_comma_loget_aval_flag else self.CP.openpilotLongitudinalControl
 
       self._remoteControl.is_active = _lat_active and (_longActive or self.CP.pcmCruise)
+      CC.latActive = _lat_active and not CS.steerFaultTemporary and not CS.steerFaultPermanent
     else:
       self._remoteControl.is_active = False
-
-    CC.latActive = _lat_active and not CS.steerFaultTemporary and not CS.steerFaultPermanent and \
-                   (not standstill or self.CP.steerAtStandstill)
+      CC.latActive = self._remoteControl.comma_latActive
 
     CC.longActive = _longActive
-
 
     actuators = CC.actuators
     actuators.longControlState = self.LoC.long_control_state
@@ -300,11 +301,13 @@ class Controls(ControlsExt, ModelStateBase):
     # accel PID lim
     pid_accel_limits = self.CI.get_pid_accel_limits(self.CP, CS.vEgo, CS.vCruise * CV.KPH_TO_MS)
 
+    if not CC.latActive:
+      self.LaC.reset()
+    if not CC.longActive:
+      self.LoC.reset()
+
+    # accel ------
     if not self._remoteControl.enabled:
-      if not CC.latActive:
-        self.LaC.reset()
-      if not CC.longActive:
-        self.LoC.reset()
       # accel PID loop
       actuators.accel = float(self.LoC.update(CC.longActive, CS, long_plan.aTarget, long_plan.shouldStop, pid_accel_limits))
 
@@ -325,7 +328,7 @@ class Controls(ControlsExt, ModelStateBase):
 
     # Steering PID loop and lateral MPC
     # Reset desired curvature to current to avoid violating the limits on engage
-    new_desired_curvature = model_desiredCurvature if CC.latActive else self.curvature
+    new_desired_curvature = model_desired_curvature if CC.latActive else self.curvature
 
     self.desired_curvature, curvature_limited = clip_curvature(CS.vEgo, self.desired_curvature, new_desired_curvature, lp.roll)
 
@@ -335,6 +338,10 @@ class Controls(ControlsExt, ModelStateBase):
                                                        self.calibrated_pose, curvature_limited)  # TODO what if not available
     actuators.torque = float(steer)
     actuators.steeringAngleDeg = float(steeringAngleDeg)
+
+    self._remoteControl.actuators_torque = actuators.torque
+    self._remoteControl.actuators_steeringAngleDeg = actuators.steeringAngleDeg
+
     # Ensure no NaNs/Infs
     for p in ACTUATOR_FIELDS:
       attr = getattr(actuators, p)
